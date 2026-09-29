@@ -1,0 +1,12 @@
+{
+    "geode": "v5.10.1",
+    "gd": {
+        "android": "*",
+        "win": "*"
+    },
+    "id": "bulat.neverlose",
+    "name": "Neverlose",
+    "version": "v1.0.0",
+    "developer": "Bulat",
+    "description": "Мой чит: Noclip, Speedhack, Auto Jump"
+}
