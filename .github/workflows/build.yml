@@ -12,10 +12,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Android
-        uses: geode-sdk/build-geode-mod@main
+        uses: geode-sdk/build-geode-mod@v1
         with:
           target: Android
           combine: true
+          sdk: nightly
 
       - name: Upload
         uses: actions/upload-artifact@v4
