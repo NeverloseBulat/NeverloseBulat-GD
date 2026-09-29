@@ -41,7 +41,6 @@ static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
 static bool g_touchHeld = false;
 
-// ================= МЕНЮ =================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes;
@@ -138,14 +137,12 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // ===== КРЕСТИК — середина правой стороны =====
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         closeBtn->setPosition({cx + 350, cy});
         menu->addChild(closeBtn);
 
-        // Tabs
         float tabY[5] = {cy + 140, cy + 70, cy, cy - 70, cy - 140};
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
@@ -167,12 +164,10 @@ public:
         m_tabCreate->setPosition({cx - 270, tabY[4]});
         menu->addChild(m_tabCreate);
 
-        // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60, cy + 100});
         menu->addChild(m_jumpHackBtn); m_mainNodes.push_back(m_jumpHackBtn);
 
-        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60, cy + 160});
         menu->addChild(m_noclipBtn); m_rageNodes.push_back(m_noclipBtn);
@@ -197,7 +192,6 @@ public:
         m_autoQuestBtn->setPosition({cx + 60, cy - 140});
         menu->addChild(m_autoQuestBtn); m_rageNodes.push_back(m_autoQuestBtn);
 
-        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60, cy + 90});
         menu->addChild(m_ldmBtn); m_visualsNodes.push_back(m_ldmBtn);
@@ -210,7 +204,6 @@ public:
         m_hitboxBtn->setPosition({cx + 60, cy - 40});
         menu->addChild(m_hitboxBtn); m_visualsNodes.push_back(m_hitboxBtn);
 
-        // ANTI-AIM
         m_spinbotBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 130});
         menu->addChild(m_spinbotBtn); m_antiAimNodes.push_back(m_spinbotBtn);
@@ -259,7 +252,6 @@ public:
         m_shUp->setPosition({cx + 200, cy - 100});
         menu->addChild(m_shUp); m_antiAimNodes.push_back(m_shUp);
 
-        // CREATE
         float col1 = cx - 60, col2 = cx + 120;
         float rowY[6] = {cy + 160, cy + 100, cy + 40, cy - 20, cy - 80, cy - 140};
 
@@ -325,21 +317,73 @@ public:
     void onTabAntiAim(CCObject*) { setPage(3); }
     void onTabCreate(CCObject*) { setPage(4); }
 
-    void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
-    void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
-    void onFly(CCObject*) { g_fly = !g_fly; refreshButtons(); }
-    void onSpikeESP(CCObject*) { g_spikeESP = !g_spikeESP; refreshButtons(); }
-    void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
-    void onAutoCoins(CCObject*) { g_autoCoins = !g_autoCoins; refreshButtons(); }
-    void onAutoQuest(CCObject*) { g_autoQuest = !g_autoQuest; refreshButtons(); }
-
-    void onLDM(CCObject*) { g_ldm = !g_ldm; GameManager::get()->setGameVariable("low_detail_mode", g_ldm); refreshButtons(); }
-    void onAutoLDM(CCObject*) { g_autoLDM = !g_autoLDM; GameManager::get()->setGameVariable("low_detail_mode", g_autoLDM); refreshButtons(); }
-    void onHitbox(CCObject*) { g_showHitbox = !g_showHitbox; refreshButtons(); }
-
-    void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
-    void onSpinUp(CCObject*) { g_spinSpeed += 1.0f; if (g_spinSpeed > 100.0f) g_spinSpeed = 100.0f; m_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString()); }
-    void onSpinDown(CCObject*) { g_spinSpeed -= 1.0f; if (g_spinSpeed < 1.0f) g_spinSpeed = 1.0f; m_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString()); }
-    void onSpeedhack(CCObject*) { g_speedhack = !g_speedhack; if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed); else CCDirector::get()->getScheduler()->setTimeScale(1.0f); refreshButtons(); }
-    void onSpeedhackUp(CCObject*) { g_speed += 0.5f; if (g_speed > 10.0f) g_speed = 10.0f; if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed); refreshButtons(); }
-    void onSpeedhackDown(CCObject*) { g_speed -= 0.5f; if (g_speed < 0.0f) g_speed = 0.0f; if (g_speedhack) CCDirector::get()->
+    void onJumpHack(CCObject*) {
+        g_jumpHack = !g_jumpHack;
+        refreshButtons();
+    }
+    void onNoclip(CCObject*) {
+        g_noclip = !g_noclip;
+        refreshButtons();
+    }
+    void onFly(CCObject*) {
+        g_fly = !g_fly;
+        refreshButtons();
+    }
+    void onSpikeESP(CCObject*) {
+        g_spikeESP = !g_spikeESP;
+        refreshButtons();
+    }
+    void onAutoJump(CCObject*) {
+        g_autoJump = !g_autoJump;
+        refreshButtons();
+    }
+    void onAutoCoins(CCObject*) {
+        g_autoCoins = !g_autoCoins;
+        refreshButtons();
+    }
+    void onAutoQuest(CCObject*) {
+        g_autoQuest = !g_autoQuest;
+        refreshButtons();
+    }
+    void onLDM(CCObject*) {
+        g_ldm = !g_ldm;
+        GameManager::get()->setGameVariable("low_detail_mode", g_ldm);
+        refreshButtons();
+    }
+    void onAutoLDM(CCObject*) {
+        g_autoLDM = !g_autoLDM;
+        GameManager::get()->setGameVariable("low_detail_mode", g_autoLDM);
+        refreshButtons();
+    }
+    void onHitbox(CCObject*) {
+        g_showHitbox = !g_showHitbox;
+        refreshButtons();
+    }
+    void onSpinbot(CCObject*) {
+        g_spinbot = !g_spinbot;
+        refreshButtons();
+    }
+    void onSpinUp(CCObject*) {
+        g_spinSpeed += 1.0f;
+        if (g_spinSpeed > 100.0f) g_spinSpeed = 100.0f;
+        m_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
+    }
+    void onSpinDown(CCObject*) {
+        g_spinSpeed -= 1.0f;
+        if (g_spinSpeed < 1.0f) g_spinSpeed = 1.0f;
+        m_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
+    }
+    void onSpeedhack(CCObject*) {
+        g_speedhack = !g_speedhack;
+        if (g_speedhack) {
+            CCDirector::get()->getScheduler()->setTimeScale(g_speed);
+        } else {
+            CCDirector::get()->getScheduler()->setTimeScale(1.0f);
+        }
+        refreshButtons();
+    }
+    void onSpeedhackUp(CCObject*) {
+        g_speed += 0.5f;
+        if (g_speed > 10.0f) g_speed = 10.0f;
+        if (g_speedhack) {
+            CCDirec
