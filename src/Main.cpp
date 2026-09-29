@@ -13,10 +13,10 @@ static float g_spinSpeed = 1.0f;
 
 class NeverloseMenu : public CCLayer {
 protected:
-    CCMenuItemSpriteExtra* m_noclipBtn = nullptr;
-    CCMenuItemSpriteExtra* m_autoJumpBtn = nullptr;
-    CCMenuItemSpriteExtra* m_speedBtn = nullptr;
-    CCMenuItemSpriteExtra* m_spinbotBtn = nullptr;
+    CCLabelBMFont* m_noclipLabel = nullptr;
+    CCLabelBMFont* m_autoJumpLabel = nullptr;
+    CCLabelBMFont* m_speedLabel = nullptr;
+    CCLabelBMFont* m_spinbotLabel = nullptr;
     CCLabelBMFont* m_spinSpeedLabel = nullptr;
 
 public:
@@ -30,19 +30,12 @@ public:
         return nullptr;
     }
 
-    void refreshButtons() {
-        m_noclipBtn->setNormalImage(ButtonSprite::create(
-            g_noclip ? "Noclip: ON" : "Noclip: OFF",
-            160, true, "bigFont.fnt", "GJ_button_01.png", 35));
-        m_autoJumpBtn->setNormalImage(ButtonSprite::create(
-            g_autoJump ? "AutoJump: ON" : "AutoJump: OFF",
-            160, true, "bigFont.fnt", "GJ_button_01.png", 35));
-        m_speedBtn->setNormalImage(ButtonSprite::create(
-            g_speed == 1.0f ? "Speed: 1.0x" : (g_speed == 2.0f ? "Speed: 2.0x" : "Speed: 0.5x"),
-            160, true, "bigFont.fnt", "GJ_button_01.png", 35));
-        m_spinbotBtn->setNormalImage(ButtonSprite::create(
-            g_spinbot ? "Spinbot: ON" : "Spinbot: OFF",
-            160, true, "bigFont.fnt", "GJ_button_01.png", 35));
+    CCLabelBMFont* makeStateLabel(bool state, CCPoint pos) {
+        auto lbl = CCLabelBMFont::create(state ? "ON" : "OFF", "bigFont.fnt");
+        lbl->setPosition(pos);
+        lbl->setScale(0.6f);
+        lbl->setColor(state ? ccGREEN : ccRED);
+        return lbl;
     }
 
     bool init() {
@@ -70,100 +63,156 @@ public:
         float cx = winSize.width / 2;
         float cy = winSize.height / 2;
 
-        m_noclipBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Noclip: OFF", 160, true, "bigFont.fnt", "GJ_button_01.png", 35),
+        // ===== NOCLIP =====
+        auto noclipBtn = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("Noclip"),
             this, menu_selector(NeverloseMenu::onNoclip));
-        m_noclipBtn->setPosition({cx, cy + 110});
-        menu->addChild(m_noclipBtn);
+        noclipBtn->setPosition({cx - 70, cy + 110});
+        menu->addChild(noclipBtn);
 
-        m_autoJumpBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("AutoJump: OFF", 160, true, "bigFont.fnt", "GJ_button_01.png", 35),
+        m_noclipLabel = makeStateLabel(g_noclip, {cx + 70, cy + 110});
+        this->addChild(m_noclipLabel);
+
+        // ===== AUTO JUMP =====
+        auto ajBtn = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("AutoJump"),
             this, menu_selector(NeverloseMenu::onAutoJump));
-        m_autoJumpBtn->setPosition({cx, cy + 60});
-        menu->addChild(m_autoJumpBtn);
+        ajBtn->setPosition({cx - 70, cy + 60});
+        menu->addChild(ajBtn);
 
-        m_speedBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Speed: 1.0x", 160, true, "bigFont.fnt", "GJ_button_01.png", 35),
+        m_autoJumpLabel = makeStateLabel(g_autoJump, {cx + 70, cy + 60});
+        this->addChild(m_autoJumpLabel);
+
+        // ===== SPEED =====
+        auto speedBtn = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("Speed"),
             this, menu_selector(NeverloseMenu::onSpeed));
-        m_speedBtn->setPosition({cx, cy + 10});
-        menu->addChild(m_speedBtn);
+        speedBtn->setPosition({cx - 70, cy + 10});
+        menu->addChild(speedBtn);
 
-        m_spinbotBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Spinbot: OFF", 160, true, "bigFont.fnt", "GJ_button_01.png", 35),
+        m_speedLabel = CCLabelBMFont::create("1.0x", "bigFont.fnt");
+        m_speedLabel->setPosition({cx + 70, cy + 10});
+        m_speedLabel->setScale(0.6f);
+        m_speedLabel->setColor(ccWHITE);
+        this->addChild(m_speedLabel);
+
+        // ===== SPINBOT =====
+        auto spinBtn = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("Spinbot"),
             this, menu_selector(NeverloseMenu::onSpinbot));
-        m_spinbotBtn->setPosition({cx, cy - 40});
-        menu->addChild(m_spinbotBtn);
+        spinBtn->setPosition({cx - 70, cy - 40});
+        menu->addChild(spinBtn);
 
+        m_spinbotLabel = makeStateLabel(g_spinbot, {cx + 70, cy - 40});
+        this->addChild(m_spinbotLabel);
+
+        // ===== SPIN SPEED =====
         auto spinSpeedText = CCLabelBMFont::create("Spin Speed:", "bigFont.fnt");
-        spinSpeedText->setPosition({cx - 60, cy - 95});
-        spinSpeedText->setScale(0.55f);
+        spinSpeedText->setPosition({cx - 90, cy - 95});
+        spinSpeedText->setScale(0.5f);
         this->addChild(spinSpeedText);
 
         auto leftBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("<", 40, true, "bigFont.fnt", "GJ_button_04.png", 30),
+            ButtonSprite::create("<"),
             this, menu_selector(NeverloseMenu::onSpinSpeedDown));
-        leftBtn->setPosition({cx + 30, cy - 95});
+        leftBtn->setPosition({cx + 20, cy - 95});
         menu->addChild(leftBtn);
 
         m_spinSpeedLabel = CCLabelBMFont::create("1.00", "bigFont.fnt");
-        m_spinSpeedLabel->setPosition({cx + 75, cy - 95});
+        m_spinSpeedLabel->setPosition({cx + 80, cy - 95});
         m_spinSpeedLabel->setScale(0.6f);
         m_spinSpeedLabel->setColor(ccYELLOW);
         this->addChild(m_spinSpeedLabel);
 
         auto rightBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create(">", 40, true, "bigFont.fnt", "GJ_button_04.png", 30),
+            ButtonSprite::create(">"),
             this, menu_selector(NeverloseMenu::onSpinSpeedUp));
-        rightBtn->setPosition({cx + 120, cy - 95});
+        rightBtn->setPosition({cx + 140, cy - 95});
         menu->addChild(rightBtn);
 
+        // ===== DISABLE ALL =====
         auto disableBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Disable All", 180, true, "bigFont.fnt", "GJ_button_06.png", 35),
+            ButtonSprite::create("Disable All"),
             this, menu_selector(NeverloseMenu::onDisableAll));
-        disableBtn->setPosition({cx, cy - 145});
+        disableBtn->setPosition({cx, cy - 150});
         menu->addChild(disableBtn);
 
+        // ===== CLOSE =====
         auto closeBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Close", 120, true, "bigFont.fnt", "GJ_button_06.png", 30),
+            ButtonSprite::create("Close"),
             this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx, cy - 185});
+        closeBtn->setPosition({cx, cy - 195});
         menu->addChild(closeBtn);
 
         this->setKeypadEnabled(true);
         return true;
     }
 
-    void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
-    void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
-    void onSpeed(CCObject*) {
-        if (g_speed == 1.0f) g_speed = 2.0f;
-        else if (g_speed == 2.0f) g_speed = 0.5f;
-        else g_speed = 1.0f;
-        CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        refreshButtons();
+    void setState(CCLabelBMFont* lbl, bool state) {
+        lbl->setString(state ? "ON" : "OFF");
+        lbl->setColor(state ? ccGREEN : ccRED);
     }
-    void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
+
+    void onNoclip(CCObject*) {
+        g_noclip = !g_noclip;
+        setState(m_noclipLabel, g_noclip);
+    }
+
+    void onAutoJump(CCObject*) {
+        g_autoJump = !g_autoJump;
+        setState(m_autoJumpLabel, g_autoJump);
+    }
+
+    void onSpeed(CCObject*) {
+        if (g_speed == 1.0f) { g_speed = 2.0f; m_speedLabel->setString("2.0x"); }
+        else if (g_speed == 2.0f) { g_speed = 0.5f; m_speedLabel->setString("0.5x"); }
+        else { g_speed = 1.0f; m_speedLabel->setString("1.0x"); }
+
+        CCDirector::get()->getScheduler()->setTimeScale(g_speed);
+    }
+
+    void onSpinbot(CCObject*) {
+        g_spinbot = !g_spinbot;
+        setState(m_spinbotLabel, g_spinbot);
+    }
+
     void onSpinSpeedUp(CCObject*) {
         g_spinSpeed += 1.0f;
         if (g_spinSpeed > 50.0f) g_spinSpeed = 50.0f;
         auto str = CCString::createWithFormat("%.2f", g_spinSpeed);
         m_spinSpeedLabel->setString(str->getCString());
     }
+
     void onSpinSpeedDown(CCObject*) {
         g_spinSpeed -= 1.0f;
         if (g_spinSpeed < 1.0f) g_spinSpeed = 1.0f;
         auto str = CCString::createWithFormat("%.2f", g_spinSpeed);
         m_spinSpeedLabel->setString(str->getCString());
     }
+
     void onDisableAll(CCObject*) {
-        g_noclip = false; g_autoJump = false; g_spinbot = false;
-        g_speed = 1.0f; g_spinSpeed = 1.0f;
+        g_noclip = false;
+        g_autoJump = false;
+        g_spinbot = false;
+        g_speed = 1.0f;
+        g_spinSpeed = 1.0f;
+
         CCDirector::get()->getScheduler()->setTimeScale(1.0f);
+
+        setState(m_noclipLabel, false);
+        setState(m_autoJumpLabel, false);
+        setState(m_spinbotLabel, false);
+        m_speedLabel->setString("1.0x");
         m_spinSpeedLabel->setString("1.00");
-        refreshButtons();
     }
-    void onClose(CCObject*) { this->removeFromParentAndCleanup(true); }
-    void keyBackClicked() { onClose(nullptr); }
+
+    void onClose(CCObject*) {
+        this->removeFromParentAndCleanup(true);
+    }
+
+    void keyBackClicked() {
+        onClose(nullptr);
+    }
 };
 
 class $modify(MyPlayLayer, PlayLayer) {
