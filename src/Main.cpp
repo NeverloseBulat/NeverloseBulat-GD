@@ -90,18 +90,15 @@ protected:
     std::vector<CCNode*> m_visualsNodes;
     std::vector<CCNode*> m_antiAimNodes;
 
-    // Rage
     CCMenuItemSpriteExtra* m_noclipBtn = nullptr;
     CCMenuItemSpriteExtra* m_flyBtn = nullptr;
     CCMenuItemSpriteExtra* m_spikeESPBtn = nullptr;
     CCMenuItemSpriteExtra* m_autoJumpBtn = nullptr;
     CCMenuItemSpriteExtra* m_speedBtn = nullptr;
 
-    // Visuals
     CCMenuItemSpriteExtra* m_ldmBtn = nullptr;
     CCMenuItemSpriteExtra* m_autoLDMBtn = nullptr;
 
-    // Anti-Aim
     CCMenuItemSpriteExtra* m_spinbotBtn = nullptr;
     CCMenuItemSpriteExtra* m_spinDown = nullptr;
     CCMenuItemSpriteExtra* m_spinUp = nullptr;
@@ -111,7 +108,6 @@ protected:
     CCMenuItemSpriteExtra* m_speedHackValue = nullptr;
     CCLabelBMFont* m_shText = nullptr;
 
-    // Tabs
     CCMenuItemSpriteExtra* m_tabRage = nullptr;
     CCMenuItemSpriteExtra* m_tabVisuals = nullptr;
     CCMenuItemSpriteExtra* m_tabAntiAim = nullptr;
@@ -171,14 +167,12 @@ public:
         sidebar->setColor({25, 25, 30});
         this->addChild(sidebar);
 
-        // Logo
         auto logo = CCLabelBMFont::create("NEVERLOSE", "goldFont.fnt");
         logo->setPosition({cx - 260, cy + 195});
         logo->setScale(0.65f);
         logo->setColor({255, 255, 255});
         this->addChild(logo);
 
-        // Categories
         auto catAim = CCLabelBMFont::create("Aimbot", "bigFont.fnt");
         catAim->setPosition({cx - 320, cy + 130});
         catAim->setScale(0.4f);
@@ -195,14 +189,12 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // Close
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         closeBtn->setPosition({cx + 360, cy + 215});
         menu->addChild(closeBtn);
 
-        // Tabs
         m_tabRage = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Rage"), this, menu_selector(NeverloseMenu::onTabRage));
         m_tabRage->setPosition({cx - 260, cy + 90});
@@ -218,7 +210,7 @@ public:
         m_tabAntiAim->setPosition({cx - 260, cy - 110});
         menu->addChild(m_tabAntiAim);
 
-        // ========== RAGE ==========
+        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60, cy + 140});
@@ -244,7 +236,7 @@ public:
         m_speedBtn->setPosition({cx + 60, cy - 100});
         menu->addChild(m_speedBtn); m_rageNodes.push_back(m_speedBtn);
 
-        // ========== VISUALS ==========
+        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60, cy + 40});
@@ -255,7 +247,7 @@ public:
         m_autoLDMBtn->setPosition({cx + 60, cy - 20});
         menu->addChild(m_autoLDMBtn); m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ========== ANTI-AIM ==========
+        // ANTI-AIM
         m_spinbotBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 130});
@@ -308,12 +300,10 @@ public:
         return true;
     }
 
-    // ===== TABS =====
     void onTabRage(CCObject*) { setPage(0); }
     void onTabVisuals(CCObject*) { setPage(1); }
     void onTabAntiAim(CCObject*) { setPage(2); }
 
-    // ===== RAGE =====
     void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
     void onFly(CCObject*) { g_fly = !g_fly; refreshButtons(); }
     void onSpikeESP(CCObject*) { g_spikeESP = !g_spikeESP; refreshButtons(); }
@@ -326,11 +316,17 @@ public:
         refreshButtons();
     }
 
-    // ===== VISUALS =====
-    void onLDM(CCObject*) { g_ldm = !g_ldm; refreshButtons(); }
-    void onAutoLDM(CCObject*) { g_autoLDM = !g_autoLDM; refreshButtons(); }
+    void onLDM(CCObject*) {
+        g_ldm = !g_ldm;
+        GameManager::get()->setGameVariable("low_detail_mode", g_ldm);
+        refreshButtons();
+    }
+    void onAutoLDM(CCObject*) {
+        g_autoLDM = !g_autoLDM;
+        GameManager::get()->setGameVariable("low_detail_mode", g_autoLDM);
+        refreshButtons();
+    }
 
-    // ===== ANTI-AIM =====
     void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.0f;
@@ -365,14 +361,6 @@ public:
 
 // ============ PLAYER ============
 class $modify(MyPlayLayer, PlayLayer) {
-    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
-        if ((g_autoLDM || g_ldm) && m_levelSettings) {
-            m_levelSettings->m_lowDetailMode = true;
-        }
-        return true;
-    }
-
     void applySpikeESP() {
         if (!g_spikeESP || !m_objectLayer) return;
         auto children = m_objectLayer->getChildren();
