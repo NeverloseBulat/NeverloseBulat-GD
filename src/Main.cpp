@@ -12,7 +12,6 @@ static bool g_spinbot = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
 
-// ============ МЕНЮ ============
 class NeverloseMenu : public CCLayer {
 protected:
     CCMenuItemSpriteExtra* m_noclipBtn = nullptr;
@@ -20,7 +19,6 @@ protected:
     CCMenuItemSpriteExtra* m_speedBtn = nullptr;
     CCMenuItemSpriteExtra* m_spinbotBtn = nullptr;
     CCLabelBMFont* m_spinSpeedLabel = nullptr;
-    CCScale9Sprite* m_panel = nullptr;
 
 public:
     static NeverloseMenu* create() {
@@ -44,24 +42,19 @@ public:
         if (!CCLayer::init()) return false;
         auto winSize = CCDirector::get()->getWinSize();
 
-        // Затемнение
-        auto overlay = CCLayerColor::create({0, 0, 0, 0});
-        overlay->setOpacity(0);
-        overlay->runAction(CCFadeTo::create(0.2f, 180));
+        auto overlay = CCLayerColor::create({0, 0, 0, 180});
         this->addChild(overlay, -1);
 
-        // ===== ЧЁРНАЯ ПАНЕЛЬ =====
-        m_panel = CCScale9Sprite::create("GJ_square01.png");
-        m_panel->setContentSize({420, 420});
-        m_panel->setPosition(winSize / 2);
-        m_panel->setColor({0, 0, 0}); // Чёрный
-        this->addChild(m_panel);
+        auto panel = CCScale9Sprite::create("GJ_square01.png");
+        panel->setContentSize({420, 420});
+        panel->setPosition(winSize / 2);
+        panel->setColor({0, 0, 0});
+        this->addChild(panel);
 
-        // ===== ГОЛУБОЕ НАЗВАНИЕ =====
         auto title = CCLabelBMFont::create("Neverlose | Bulat", "goldFont.fnt");
         title->setPosition({winSize.width / 2, winSize.height / 2 + 170});
         title->setScale(0.8f);
-        title->setColor({0, 200, 255}); // Голубой
+        title->setColor({0, 200, 255});
         this->addChild(title);
 
         auto menu = CCMenu::create();
@@ -71,7 +64,6 @@ public:
         float cx = winSize.width / 2;
         float cy = winSize.height / 2;
 
-        // ===== КРЕСТИК =====
         auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         closeSprite->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(
@@ -79,35 +71,30 @@ public:
         closeBtn->setPosition({cx + 190, cy + 185});
         menu->addChild(closeBtn);
 
-        // ===== NOCLIP =====
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx, cy + 110});
         menu->addChild(m_noclipBtn);
 
-        // ===== AUTO JUMP =====
         m_autoJumpBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("AutoJump: OFF"), this, menu_selector(NeverloseMenu::onAutoJump));
         m_autoJumpBtn->setPosition({cx, cy + 60});
         menu->addChild(m_autoJumpBtn);
 
-        // ===== SPEED =====
         m_speedBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Speed: 1.0x"), this, menu_selector(NeverloseMenu::onSpeed));
         m_speedBtn->setPosition({cx, cy + 10});
         menu->addChild(m_speedBtn);
 
-        // ===== SPINBOT =====
         m_spinbotBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx, cy - 40});
         menu->addChild(m_spinbotBtn);
 
-        // ===== SPIN SPEED =====
         auto spinSpeedText = CCLabelBMFont::create("Spin Speed:", "bigFont.fnt");
         spinSpeedText->setPosition({cx - 60, cy - 95});
         spinSpeedText->setScale(0.5f);
-        spinSpeedText->setColor({0, 200, 255}); // Голубой
+        spinSpeedText->setColor({0, 200, 255});
         this->addChild(spinSpeedText);
 
         auto leftBtn = CCMenuItemSpriteExtra::create(
@@ -118,7 +105,7 @@ public:
         m_spinSpeedLabel = CCLabelBMFont::create("5.00", "bigFont.fnt");
         m_spinSpeedLabel->setPosition({cx + 75, cy - 95});
         m_spinSpeedLabel->setScale(0.6f);
-        m_spinSpeedLabel->setColor({0, 200, 255}); // Голубой
+        m_spinSpeedLabel->setColor({0, 200, 255});
         this->addChild(m_spinSpeedLabel);
 
         auto rightBtn = CCMenuItemSpriteExtra::create(
@@ -126,18 +113,15 @@ public:
         rightBtn->setPosition({cx + 120, cy - 95});
         menu->addChild(rightBtn);
 
-        // ===== DISABLE ALL =====
         auto disableBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Disable All"), this, menu_selector(NeverloseMenu::onDisableAll));
         disableBtn->setPosition({cx, cy - 150});
         menu->addChild(disableBtn);
 
-        // ===== АНИМАЦИЯ ОТКРЫТИЯ =====
+        // Анимация: только масштаб (без opacity)
         this->setScale(0.3f);
-        this->setOpacity(0);
         auto scaleUp = CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f));
-        auto fadeIn = CCFadeTo::create(0.25f, 255);
-        this->runAction(CCSpawn::create(scaleUp, fadeIn, nullptr));
+        this->runAction(scaleUp);
 
         this->setKeypadEnabled(true);
         return true;
@@ -173,18 +157,14 @@ public:
 
     void onClose(CCObject*) {
         auto scaleDown = CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f));
-        auto fadeOut = CCFadeTo::create(0.2f, 0);
         auto callback = CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe));
-        this->runAction(CCSequence::create(
-            CCSpawn::create(scaleDown, fadeOut, nullptr),
-            callback, nullptr));
+        this->runAction(CCSequence::create(scaleDown, callback, nullptr));
     }
 
     void removeMe() { this->removeFromParentAndCleanup(true); }
     void keyBackClicked() { onClose(nullptr); }
 };
 
-// ============ NOCLIP ============
 class $modify(MyPlayLayer, PlayLayer) {
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
         if (g_noclip) return;
@@ -200,7 +180,6 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 };
 
-// ============ SPINBOT ============
 class $modify(MyPlayer, PlayerObject) {
     void update(float dt) {
         PlayerObject::update(dt);
@@ -208,7 +187,6 @@ class $modify(MyPlayer, PlayerObject) {
     }
 };
 
-// ============ КНОПКА В ПАУЗЕ ============
 class $modify(MyPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
