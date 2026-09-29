@@ -11,12 +11,13 @@ static bool g_fly = false;
 static bool g_autoJump = false;
 static bool g_spinbot = false;
 static bool g_spikeESP = false;
+static bool g_hitbox = false;
 static bool g_ldm = false;
 static bool g_autoLDM = false;
 static bool g_speedhack = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
-static bool g_jumpHeld = false;
+static bool g_touchHeld = false;
 
 // ============ МЕНЮ ============
 class NeverloseMenu : public CCLayer {
@@ -32,6 +33,7 @@ protected:
 
     CCMenuItemSpriteExtra* m_ldmBtn = nullptr;
     CCMenuItemSpriteExtra* m_autoLDMBtn = nullptr;
+    CCMenuItemSpriteExtra* m_hitboxBtn = nullptr;
 
     CCMenuItemSpriteExtra* m_spinbotBtn = nullptr;
     CCMenuItemSpriteExtra* m_spinDown = nullptr;
@@ -63,6 +65,7 @@ public:
         m_autoJumpBtn->setNormalImage(ButtonSprite::create(g_autoJump ? "AutoJump: ON" : "AutoJump: OFF"));
         m_ldmBtn->setNormalImage(ButtonSprite::create(g_ldm ? "LDM: ON" : "LDM: OFF"));
         m_autoLDMBtn->setNormalImage(ButtonSprite::create(g_autoLDM ? "Auto LDM: ON" : "Auto LDM: OFF"));
+        m_hitboxBtn->setNormalImage(ButtonSprite::create(g_hitbox ? "Show Hitbox: ON" : "Show Hitbox: OFF"));
         m_spinbotBtn->setNormalImage(ButtonSprite::create(g_spinbot ? "Spinbot: ON" : "Spinbot: OFF"));
         m_speedhackBtn->setNormalImage(ButtonSprite::create(g_speedhack ? "Speedhack: ON" : "Speedhack: OFF"));
         m_shLabel->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
@@ -119,11 +122,11 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // КРЕСТИК — спущен ниже, чтобы не улетал за экран
+        // ===== КРЕСТИК — правая часть, чуть выше =====
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 340, cy + 195});
+        closeBtn->setPosition({cx + 340, cy + 200});
         menu->addChild(closeBtn);
 
         m_tabRage = CCMenuItemSpriteExtra::create(
@@ -141,7 +144,7 @@ public:
         m_tabAntiAim->setPosition({cx - 260, cy - 110});
         menu->addChild(m_tabAntiAim);
 
-        // ========== RAGE ==========
+        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60, cy + 120});
@@ -162,18 +165,23 @@ public:
         m_autoJumpBtn->setPosition({cx + 60, cy - 75});
         menu->addChild(m_autoJumpBtn); m_rageNodes.push_back(m_autoJumpBtn);
 
-        // ========== VISUALS ==========
+        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
-        m_ldmBtn->setPosition({cx + 60, cy + 40});
+        m_ldmBtn->setPosition({cx + 60, cy + 80});
         menu->addChild(m_ldmBtn); m_visualsNodes.push_back(m_ldmBtn);
 
         m_autoLDMBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Auto LDM: OFF"), this, menu_selector(NeverloseMenu::onAutoLDM));
-        m_autoLDMBtn->setPosition({cx + 60, cy - 20});
+        m_autoLDMBtn->setPosition({cx + 60, cy + 20});
         menu->addChild(m_autoLDMBtn); m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ========== ANTI-AIM ==========
+        m_hitboxBtn = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("Show Hitbox: OFF"), this, menu_selector(NeverloseMenu::onHitbox));
+        m_hitboxBtn->setPosition({cx + 60, cy - 40});
+        menu->addChild(m_hitboxBtn); m_visualsNodes.push_back(m_hitboxBtn);
+
+        // ANTI-AIM
         m_spinbotBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 130});
@@ -256,6 +264,13 @@ public:
         GameManager::get()->setGameVariable("low_detail_mode", g_autoLDM);
         refreshButtons();
     }
+    void onHitbox(CCObject*) {
+        g_hitbox = !g_hitbox;
+        refreshButtons();
+        if (auto pl = PlayLayer::get()) {
+            pl->m_isDebugDrawEnabled = g_hitbox;
+        }
+    }
 
     void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
     void onSpinUp(CCObject*) {
@@ -300,8 +315,29 @@ public:
 
 // ============ PLAYER ============
 class $modify(MyPlayLayer, PlayLayer) {
+    bool init(GJGameLevel* lvl, bool replay, bool noObj) {
+        if (!PlayLayer::init(lvl, replay, noObj)) return false;
+
+        auto listener = EventListenerTouchOneByOne::create();
+        listener->setSwallowTouches(false);
+        listener->onTouchBegan = [](Touch*, Event*) {
+            g_touchHeld = true;
+            return false;
+        };
+        listener->onTouchEnded = [](Touch*, Event*) {
+            g_touchHeld = false;
+        };
+        listener->onTouchCancelled = [](Touch*, Event*) {
+            g_touchHeld = false;
+        };
+        Director::getInstance()->getEventDispatcher()
+            ->addEventListenerWithSceneGraphPriority(listener, this);
+
+        return true;
+    }
+
     void applySpikeESP() {
-        if (!g_spikeESP || !m_objectLayer) return;
+        if (!m_objectLayer) return;
         auto children = m_objectLayer->getChildren();
         if (!children) return;
 
@@ -309,26 +345,29 @@ class $modify(MyPlayLayer, PlayLayer) {
             auto obj = typeinfo_cast<GameObject*>(children->objectAtIndex(i));
             if (!obj) continue;
 
-            bool isSpike = (obj->m_objectID == 8    || obj->m_objectID == 39  ||
-                            obj->m_objectID == 103  || obj->m_objectID == 392 ||
-                            obj->m_objectID == 421  || obj->m_objectID == 422 ||
-                            obj->m_objectID == 1322 || obj->m_objectID == 1323 ||
-                            obj->m_objectID == 1333);
+            bool isSpike = ((int)obj->m_objectType & (int)GameObjectType::Hazard) != 0;
+            if (!isSpike) {
+                int id = obj->m_objectID;
+                isSpike = (id == 8 || id == 39 || id == 103 || id == 392 ||
+                           id == 421 || id == 422 || id == 1322 || id == 1323);
+            }
 
-            if (!isSpike && obj->m_objectType != GameObjectType::Hazard) continue;
-
-            obj->setColor({255, 50, 50});
-
-            if (!obj->getChildByID("nl_spike_red")) {
-                auto redOverlay = CCLayerColor::create(
-                    {255, 0, 0, 130},
-                    obj->getContentSize().width,
-                    obj->getContentSize().height
-                );
-                redOverlay->setID("nl_spike_red");
-                redOverlay->setPosition({0, 0});
-                redOverlay->setAnchorPoint({0, 0});
-                obj->addChild(redOverlay, 999);
+            if (isSpike && g_spikeESP) {
+                obj->setColor({255, 50, 50});
+                if (!obj->getChildByID("nl_spike_red")) {
+                    auto red = CCLayerColor::create(
+                        {255, 0, 0, 130},
+                        obj->getContentSize().width,
+                        obj->getContentSize().height);
+                    red->setID("nl_spike_red");
+                    red->setAnchorPoint({0, 0});
+                    red->setPosition({0, 0});
+                    obj->addChild(red, 999);
+                }
+            } else if (!g_spikeESP) {
+                if (auto red = obj->getChildByID("nl_spike_red")) {
+                    red->removeFromParent();
+                }
             }
         }
     }
@@ -345,9 +384,15 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         if (g_fly && m_player1) {
             auto pos = m_player1->getPosition();
-            if (g_jumpHeld) pos.y += 7;
-            else pos.y -= 7;
+            if (g_touchHeld) pos.y += 7;
+            else pos.y -= 5;
             m_player1->setPosition(pos);
+        }
+
+        if (g_hitbox && m_player1) {
+            m_player1->setDebugDrawMask(1);
+        } else if (m_player1) {
+            m_player1->setDebugDrawMask(0);
         }
 
         applySpikeESP();
@@ -360,14 +405,6 @@ class $modify(MyPlayLayer, PlayLayer) {
 };
 
 class $modify(MyPlayer, PlayerObject) {
-    void pushButton(PlayerButton btn) {
-        if (btn == PlayerButton::Jump) g_jumpHeld = true;
-        PlayerObject::pushButton(btn);
-    }
-    void releaseButton(PlayerButton btn) {
-        if (btn == PlayerButton::Jump) g_jumpHeld = false;
-        PlayerObject::releaseButton(btn);
-    }
     void update(float dt) {
         PlayerObject::update(dt);
         if (g_spinbot) this->setRotation(this->getRotation() + g_spinSpeed);
@@ -381,7 +418,7 @@ class $modify(MyPauseLayer, PauseLayer) {
         auto ws = CCDirector::get()->getWinSize();
         auto btn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Neverlose"), this, menu_selector(MyPauseLayer::onNeverlose));
-        btn->setPosition({ws.width * 0.25f, ws.height * 0.72f});
+        btn->setPosition({ws.width * 0.12f, ws.height * 0.72f});
         auto menu = CCMenu::create();
         menu->addChild(btn);
         menu->setPosition({0, 0});
