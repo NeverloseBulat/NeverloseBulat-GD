@@ -122,7 +122,7 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // ===== КРЕСТИК — правая часть, чуть выше =====
+        // КРЕСТИК — правая часть, чуть выше
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
@@ -267,9 +267,6 @@ public:
     void onHitbox(CCObject*) {
         g_hitbox = !g_hitbox;
         refreshButtons();
-        if (auto pl = PlayLayer::get()) {
-            pl->m_isDebugDrawEnabled = g_hitbox;
-        }
     }
 
     void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
@@ -387,12 +384,6 @@ class $modify(MyPlayLayer, PlayLayer) {
             if (g_touchHeld) pos.y += 7;
             else pos.y -= 5;
             m_player1->setPosition(pos);
-        }
-
-        if (g_hitbox && m_player1) {
-            m_player1->setDebugDrawMask(1);
-        } else if (m_player1) {
-            m_player1->setDebugDrawMask(0);
         }
 
         applySpikeESP();
