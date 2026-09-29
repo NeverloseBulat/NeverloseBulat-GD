@@ -3,7 +3,6 @@
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
-#include <cstdlib>
 
 using namespace geode::prelude;
 
@@ -17,73 +16,9 @@ static bool g_autoLDM = false;
 static bool g_speedhack = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
-static bool g_flyW = false, g_flyA = false, g_flyS = false, g_flyD = false;
+static bool g_jumpHeld = false;
 
-// ============ INPUT POPUP ============
-class SpeedInputPopup : public CCLayer, public TextInputDelegate {
-protected:
-    CCTextInputNode* m_input = nullptr;
-public:
-    static SpeedInputPopup* create() {
-        auto ret = new SpeedInputPopup();
-        if (ret && ret->init()) { ret->autorelease(); return ret; }
-        delete ret; return nullptr;
-    }
-    bool init() {
-        if (!CCLayer::init()) return false;
-        auto ws = CCDirector::get()->getWinSize();
-
-        auto bg = CCLayerColor::create({0, 0, 0, 200});
-        this->addChild(bg, -1);
-
-        auto panel = CCScale9Sprite::create("GJ_square01.png");
-        panel->setContentSize({340, 200});
-        panel->setPosition(ws / 2);
-        this->addChild(panel);
-
-        auto title = CCLabelBMFont::create("Speedhack", "goldFont.fnt");
-        title->setPosition({ws.width / 2, ws.height / 2 + 65});
-        title->setScale(0.7f);
-        title->setColor({0, 200, 255});
-        this->addChild(title);
-
-        auto hint = CCLabelBMFont::create("0.000 - 10.000", "bigFont.fnt");
-        hint->setPosition({ws.width / 2, ws.height / 2 + 30});
-        hint->setScale(0.4f);
-        hint->setColor({180, 180, 180});
-        this->addChild(hint);
-
-        m_input = CCTextInputNode::create(220, 40, "1.000", "bigFont.fnt");
-        m_input->setPosition({ws.width / 2, ws.height / 2 - 10});
-        m_input->setDelegate(this);
-        m_input->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
-        this->addChild(m_input);
-
-        auto menu = CCMenu::create();
-        menu->setPosition({0, 0});
-        this->addChild(menu);
-
-        auto okBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("OK"), this, menu_selector(SpeedInputPopup::onOK));
-        okBtn->setPosition({ws.width / 2, ws.height / 2 - 65});
-        menu->addChild(okBtn);
-
-        this->setKeypadEnabled(true);
-        return true;
-    }
-    void onOK(CCObject*) {
-        std::string s = m_input->getString();
-        float v = std::atof(s.c_str());
-        if (v < 0.0f) v = 0.0f;
-        if (v > 10.0f) v = 10.0f;
-        g_speed = v;
-        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        this->removeFromParentAndCleanup(true);
-    }
-    void keyBackClicked() { this->removeFromParentAndCleanup(true); }
-};
-
-// ============ MENU ============
+// ============ МЕНЮ ============
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_rageNodes;
@@ -94,7 +29,6 @@ protected:
     CCMenuItemSpriteExtra* m_flyBtn = nullptr;
     CCMenuItemSpriteExtra* m_spikeESPBtn = nullptr;
     CCMenuItemSpriteExtra* m_autoJumpBtn = nullptr;
-    CCMenuItemSpriteExtra* m_speedBtn = nullptr;
 
     CCMenuItemSpriteExtra* m_ldmBtn = nullptr;
     CCMenuItemSpriteExtra* m_autoLDMBtn = nullptr;
@@ -104,15 +38,16 @@ protected:
     CCMenuItemSpriteExtra* m_spinUp = nullptr;
     CCLabelBMFont* m_spinLabel = nullptr;
     CCLabelBMFont* m_spinText = nullptr;
+
     CCMenuItemSpriteExtra* m_speedhackBtn = nullptr;
-    CCMenuItemSpriteExtra* m_speedHackValue = nullptr;
+    CCMenuItemSpriteExtra* m_shDown = nullptr;
+    CCMenuItemSpriteExtra* m_shUp = nullptr;
+    CCLabelBMFont* m_shLabel = nullptr;
     CCLabelBMFont* m_shText = nullptr;
 
     CCMenuItemSpriteExtra* m_tabRage = nullptr;
     CCMenuItemSpriteExtra* m_tabVisuals = nullptr;
     CCMenuItemSpriteExtra* m_tabAntiAim = nullptr;
-
-    int m_page = 0;
 
 public:
     static NeverloseMenu* create() {
@@ -126,22 +61,17 @@ public:
         m_flyBtn->setNormalImage(ButtonSprite::create(g_fly ? "Fly: ON" : "Fly: OFF"));
         m_spikeESPBtn->setNormalImage(ButtonSprite::create(g_spikeESP ? "ESP Spikes: ON" : "ESP Spikes: OFF"));
         m_autoJumpBtn->setNormalImage(ButtonSprite::create(g_autoJump ? "AutoJump: ON" : "AutoJump: OFF"));
-        m_speedBtn->setNormalImage(ButtonSprite::create(
-            g_speed == 1.0f ? "Speed: 1.0x" : (g_speed == 2.0f ? "Speed: 2.0x" : "Speed: 0.5x")));
         m_ldmBtn->setNormalImage(ButtonSprite::create(g_ldm ? "LDM: ON" : "LDM: OFF"));
         m_autoLDMBtn->setNormalImage(ButtonSprite::create(g_autoLDM ? "Auto LDM: ON" : "Auto LDM: OFF"));
         m_spinbotBtn->setNormalImage(ButtonSprite::create(g_spinbot ? "Spinbot: ON" : "Spinbot: OFF"));
         m_speedhackBtn->setNormalImage(ButtonSprite::create(g_speedhack ? "Speedhack: ON" : "Speedhack: OFF"));
-        m_speedHackValue->setNormalImage(ButtonSprite::create(
-            CCString::createWithFormat("%.3f", g_speed)->getCString()));
+        m_shLabel->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
     }
 
     void setPage(int p) {
-        m_page = p;
         for (auto n : m_rageNodes) n->setVisible(p == 0);
         for (auto n : m_visualsNodes) n->setVisible(p == 1);
         for (auto n : m_antiAimNodes) n->setVisible(p == 2);
-
         m_tabRage->setColor(p == 0 ? ccWHITE : ccGRAY);
         m_tabVisuals->setColor(p == 1 ? ccWHITE : ccGRAY);
         m_tabAntiAim->setColor(p == 2 ? ccWHITE : ccGRAY);
@@ -189,10 +119,11 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
+        // КРЕСТИК — спущен ниже, чтобы не улетал за экран
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 360, cy + 215});
+        closeBtn->setPosition({cx + 340, cy + 195});
         menu->addChild(closeBtn);
 
         m_tabRage = CCMenuItemSpriteExtra::create(
@@ -210,33 +141,28 @@ public:
         m_tabAntiAim->setPosition({cx - 260, cy - 110});
         menu->addChild(m_tabAntiAim);
 
-        // RAGE
+        // ========== RAGE ==========
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
-        m_noclipBtn->setPosition({cx + 60, cy + 140});
+        m_noclipBtn->setPosition({cx + 60, cy + 120});
         menu->addChild(m_noclipBtn); m_rageNodes.push_back(m_noclipBtn);
 
         m_flyBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Fly: OFF"), this, menu_selector(NeverloseMenu::onFly));
-        m_flyBtn->setPosition({cx + 60, cy + 80});
+        m_flyBtn->setPosition({cx + 60, cy + 55});
         menu->addChild(m_flyBtn); m_rageNodes.push_back(m_flyBtn);
 
         m_spikeESPBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("ESP Spikes: OFF"), this, menu_selector(NeverloseMenu::onSpikeESP));
-        m_spikeESPBtn->setPosition({cx + 60, cy + 20});
+        m_spikeESPBtn->setPosition({cx + 60, cy - 10});
         menu->addChild(m_spikeESPBtn); m_rageNodes.push_back(m_spikeESPBtn);
 
         m_autoJumpBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("AutoJump: OFF"), this, menu_selector(NeverloseMenu::onAutoJump));
-        m_autoJumpBtn->setPosition({cx + 60, cy - 40});
+        m_autoJumpBtn->setPosition({cx + 60, cy - 75});
         menu->addChild(m_autoJumpBtn); m_rageNodes.push_back(m_autoJumpBtn);
 
-        m_speedBtn = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("Speed: 1.0x"), this, menu_selector(NeverloseMenu::onSpeed));
-        m_speedBtn->setPosition({cx + 60, cy - 100});
-        menu->addChild(m_speedBtn); m_rageNodes.push_back(m_speedBtn);
-
-        // VISUALS
+        // ========== VISUALS ==========
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60, cy + 40});
@@ -247,7 +173,7 @@ public:
         m_autoLDMBtn->setPosition({cx + 60, cy - 20});
         menu->addChild(m_autoLDMBtn); m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ANTI-AIM
+        // ========== ANTI-AIM ==========
         m_spinbotBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 130});
@@ -280,16 +206,27 @@ public:
         m_speedhackBtn->setPosition({cx + 60, cy - 30});
         menu->addChild(m_speedhackBtn); m_antiAimNodes.push_back(m_speedhackBtn);
 
-        m_shText = CCLabelBMFont::create("Value (click to edit):", "bigFont.fnt");
-        m_shText->setPosition({cx - 20, cy - 100});
-        m_shText->setScale(0.45f);
+        m_shText = CCLabelBMFont::create("Speedhack Value", "bigFont.fnt");
+        m_shText->setPosition({cx - 30, cy - 100});
+        m_shText->setScale(0.5f);
         m_shText->setColor({0, 200, 255});
         this->addChild(m_shText); m_antiAimNodes.push_back(m_shText);
 
-        m_speedHackValue = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("1.000"), this, menu_selector(NeverloseMenu::onSpeedValueClick));
-        m_speedHackValue->setPosition({cx + 130, cy - 100});
-        menu->addChild(m_speedHackValue); m_antiAimNodes.push_back(m_speedHackValue);
+        m_shDown = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("<"), this, menu_selector(NeverloseMenu::onSpeedhackDown));
+        m_shDown->setPosition({cx + 70, cy - 100});
+        menu->addChild(m_shDown); m_antiAimNodes.push_back(m_shDown);
+
+        m_shLabel = CCLabelBMFont::create("1.000", "bigFont.fnt");
+        m_shLabel->setPosition({cx + 135, cy - 100});
+        m_shLabel->setScale(0.7f);
+        m_shLabel->setColor({0, 200, 255});
+        this->addChild(m_shLabel); m_antiAimNodes.push_back(m_shLabel);
+
+        m_shUp = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create(">"), this, menu_selector(NeverloseMenu::onSpeedhackUp));
+        m_shUp->setPosition({cx + 200, cy - 100});
+        menu->addChild(m_shUp); m_antiAimNodes.push_back(m_shUp);
 
         setPage(0);
         refreshButtons();
@@ -308,13 +245,6 @@ public:
     void onFly(CCObject*) { g_fly = !g_fly; refreshButtons(); }
     void onSpikeESP(CCObject*) { g_spikeESP = !g_spikeESP; refreshButtons(); }
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
-    void onSpeed(CCObject*) {
-        if (g_speed == 1.0f) g_speed = 2.0f;
-        else if (g_speed == 2.0f) g_speed = 0.5f;
-        else g_speed = 1.0f;
-        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        refreshButtons();
-    }
 
     void onLDM(CCObject*) {
         g_ldm = !g_ldm;
@@ -338,15 +268,24 @@ public:
         if (g_spinSpeed < 1.0f) g_spinSpeed = 1.0f;
         m_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
     }
+
     void onSpeedhack(CCObject*) {
         g_speedhack = !g_speedhack;
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
         else CCDirector::get()->getScheduler()->setTimeScale(1.0f);
         refreshButtons();
     }
-    void onSpeedValueClick(CCObject*) {
-        auto popup = SpeedInputPopup::create();
-        if (popup) this->addChild(popup, 999);
+    void onSpeedhackUp(CCObject*) {
+        g_speed += 0.5f;
+        if (g_speed > 10.0f) g_speed = 10.0f;
+        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
+        refreshButtons();
+    }
+    void onSpeedhackDown(CCObject*) {
+        g_speed -= 0.5f;
+        if (g_speed < 0.0f) g_speed = 0.0f;
+        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
+        refreshButtons();
     }
 
     void onClose(CCObject*) {
@@ -365,52 +304,53 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (!g_spikeESP || !m_objectLayer) return;
         auto children = m_objectLayer->getChildren();
         if (!children) return;
+
         for (unsigned int i = 0; i < children->count(); i++) {
             auto obj = typeinfo_cast<GameObject*>(children->objectAtIndex(i));
             if (!obj) continue;
-            int id = obj->m_objectID;
-            if (id == 8 || id == 39 || id == 103 || id == 392 || id == 421 ||
-                id == 422 || id == 1322 || id == 1323) {
-                obj->setColor({255, 50, 50});
+
+            bool isSpike = (obj->m_objectID == 8    || obj->m_objectID == 39  ||
+                            obj->m_objectID == 103  || obj->m_objectID == 392 ||
+                            obj->m_objectID == 421  || obj->m_objectID == 422 ||
+                            obj->m_objectID == 1322 || obj->m_objectID == 1323 ||
+                            obj->m_objectID == 1333);
+
+            if (!isSpike && obj->m_objectType != GameObjectType::Hazard) continue;
+
+            obj->setColor({255, 50, 50});
+
+            if (!obj->getChildByID("nl_spike_red")) {
+                auto redOverlay = CCLayerColor::create(
+                    {255, 0, 0, 130},
+                    obj->getContentSize().width,
+                    obj->getContentSize().height
+                );
+                redOverlay->setID("nl_spike_red");
+                redOverlay->setPosition({0, 0});
+                redOverlay->setAnchorPoint({0, 0});
+                obj->addChild(redOverlay, 999);
             }
         }
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        if (g_noclip) return;
+        if (g_noclip || g_fly) return;
         PlayLayer::destroyPlayer(player, obj);
     }
 
     void update(float dt) {
         PlayLayer::update(dt);
+
         if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
+
         if (g_fly && m_player1) {
             auto pos = m_player1->getPosition();
-            float sp = 6.0f;
-            if (g_flyW) pos.y += sp;
-            if (g_flyS) pos.y -= sp;
-            if (g_flyA) pos.x -= sp;
-            if (g_flyD) pos.x += sp;
+            if (g_jumpHeld) pos.y += 7;
+            else pos.y -= 7;
             m_player1->setPosition(pos);
         }
-        applySpikeESP();
-    }
 
-    void keyDown(cocos2d::enumKeyCodes key, double t) {
-        if (g_fly) {
-            if (key == cocos2d::KEY_W) g_flyW = true;
-            if (key == cocos2d::KEY_A) g_flyA = true;
-            if (key == cocos2d::KEY_S) g_flyS = true;
-            if (key == cocos2d::KEY_D) g_flyD = true;
-        }
-        PlayLayer::keyDown(key, t);
-    }
-    void keyUp(cocos2d::enumKeyCodes key, double t) {
-        if (key == cocos2d::KEY_W) g_flyW = false;
-        if (key == cocos2d::KEY_A) g_flyA = false;
-        if (key == cocos2d::KEY_S) g_flyS = false;
-        if (key == cocos2d::KEY_D) g_flyD = false;
-        PlayLayer::keyUp(key, t);
+        applySpikeESP();
     }
 
     void onExit() {
@@ -420,6 +360,14 @@ class $modify(MyPlayLayer, PlayLayer) {
 };
 
 class $modify(MyPlayer, PlayerObject) {
+    void pushButton(PlayerButton btn) {
+        if (btn == PlayerButton::Jump) g_jumpHeld = true;
+        PlayerObject::pushButton(btn);
+    }
+    void releaseButton(PlayerButton btn) {
+        if (btn == PlayerButton::Jump) g_jumpHeld = false;
+        PlayerObject::releaseButton(btn);
+    }
     void update(float dt) {
         PlayerObject::update(dt);
         if (g_spinbot) this->setRotation(this->getRotation() + g_spinSpeed);
