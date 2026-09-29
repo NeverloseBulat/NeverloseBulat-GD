@@ -312,27 +312,6 @@ public:
 
 // ============ PLAYER ============
 class $modify(MyPlayLayer, PlayLayer) {
-    bool init(GJGameLevel* lvl, bool replay, bool noObj) {
-        if (!PlayLayer::init(lvl, replay, noObj)) return false;
-
-        auto listener = EventListenerTouchOneByOne::create();
-        listener->setSwallowTouches(false);
-        listener->onTouchBegan = [](Touch*, Event*) {
-            g_touchHeld = true;
-            return false;
-        };
-        listener->onTouchEnded = [](Touch*, Event*) {
-            g_touchHeld = false;
-        };
-        listener->onTouchCancelled = [](Touch*, Event*) {
-            g_touchHeld = false;
-        };
-        Director::getInstance()->getEventDispatcher()
-            ->addEventListenerWithSceneGraphPriority(listener, this);
-
-        return true;
-    }
-
     void applySpikeESP() {
         if (!m_objectLayer) return;
         auto children = m_objectLayer->getChildren();
@@ -396,6 +375,14 @@ class $modify(MyPlayLayer, PlayLayer) {
 };
 
 class $modify(MyPlayer, PlayerObject) {
+    void pushButton(PlayerButton btn) {
+        if (btn == PlayerButton::Jump) g_touchHeld = true;
+        PlayerObject::pushButton(btn);
+    }
+    void releaseButton(PlayerButton btn) {
+        if (btn == PlayerButton::Jump) g_touchHeld = false;
+        PlayerObject::releaseButton(btn);
+    }
     void update(float dt) {
         PlayerObject::update(dt);
         if (g_spinbot) this->setRotation(this->getRotation() + g_spinSpeed);
