@@ -387,5 +387,77 @@ public:
     void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
 
     void onClose(CCObject*) {
-        this->runAction(CCSequence::create(
-            CCEaseBackIn::cr
+        this->runAction(CCSequence::create(this->runAction(CCSequence::create(
+            CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
+            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
+            nullptr));
+    }
+    void removeMe() { this->removeFromParentAndCleanup(true); }
+    void keyBackClicked() { onClose(nullptr); }
+};
+
+class $modify(MyPlayLayer, PlayLayer) {
+    void destroyPlayer(PlayerObject* player, GameObject* obj) {
+        if (g_noclip) return;
+        PlayLayer::destroyPlayer(player, obj);
+    }
+    void update(float dt) {
+        PlayLayer::update(dt);
+        if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
+        if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
+    }
+};
+
+class $modify(MyPlayer, PlayerObject) {
+    void releaseButton(PlayerButton btn) {
+        if (g_autoJump && btn == PlayerButton::Jump) return;
+        PlayerObject::releaseButton(btn);
+    }
+    void update(float dt) {
+        PlayerObject::update(dt);
+        if (g_aaEnabled) {
+            this->setFlipX(g_aaFlipX);
+            this->setFlipY(g_aaFlipY);
+        } else {
+            this->setFlipX(false);
+            this->setFlipY(false);
+        }
+        if (g_spinbot) this->setRotation(this->getRotation() + g_spinSpeed);
+    }
+};
+
+class $modify(MyLevelInfoLayer, LevelInfoLayer) {
+    bool init(GJGameLevel* p0, bool p1) {
+        if (!LevelInfoLayer::init(p0, p1)) return false;
+        if (!g_copyHack) return true;
+        if (auto menu = getChildByID("left-side-menu")) {
+            if (auto btn = typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(menu, "GJ_duplicateLockedBtn_001.png"))) {
+                if (btn->isVisible()) {
+                    btn->m_pfnSelector = menu_selector(LevelInfoLayer::confirmClone);
+                    btn->setSprite(CCSprite::createWithSpriteFrameName("GJ_duplicateBtn_001.png"));
+                }
+            } else if (auto btn = typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(menu, "GJ_duplicateBtn_001.png"))) {
+                btn->setVisible(true);
+            }
+        }
+        return true;
+    }
+};
+
+class $modify(MyPauseLayer, PauseLayer) {
+    void customSetup() {
+        PauseLayer::customSetup();
+        auto ws = CCDirector::get()->getWinSize();
+        auto btn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Neverlose"), this, menu_selector(MyPauseLayer::onNeverlose));
+        btn->setPosition({ws.width * 0.12f, ws.height * 0.72f});
+        auto menu = CCMenu::create();
+        menu->addChild(btn);
+        menu->setPosition({0, 0});
+        this->addChild(menu, 100);
+    }
+    void onNeverlose(CCObject*) {
+        auto menu = NeverloseMenu::create();
+        if (menu) this->addChild(menu, 200);
+    }
+};
+            
