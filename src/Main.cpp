@@ -387,10 +387,10 @@ public:
     void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
 
     void onClose(CCObject*) {
-        this->runAction(CCSequence::create(this->runAction(CCSequence::create(
-            CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
-            nullptr));
+      this->runAction(CCSequence::create(
+        CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
+        CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
+        nullptr));
     }
     void removeMe() { this->removeFromParentAndCleanup(true); }
     void keyBackClicked() { onClose(nullptr); }
