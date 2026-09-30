@@ -167,7 +167,7 @@ public:
     void onSpeedhackDown(CCObject*){g_speed-=1;if(g_speed<0)g_speed=0;if(g_speedhack)CCDirector::get()->getScheduler()->setTimeScale(g_speed);m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f",g_speed)->getCString()));}
     void onSpeedValue(CCObject*){auto p=ValueInputPopup::create(true);if(p)this->addChild(p,9999);}
     void onCopyHack(CCObject*){g_copyHack=!g_copyHack;refreshButtons();}
-    void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_autoSafeMode=!g_autoSafeMode;refreshButtons();}
+        void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_autoSafeMode;refreshButtons();}
     void onCheatIndicator(CCObject*){g_cheatIndicator=!g_cheatIndicator;refreshButtons();}
     void onCPS(CCObject*){g_showCPS=!g_showCPS;refreshButtons();}
     void onTime(CCObject*){g_showTime=!g_showTime;refreshButtons();}
