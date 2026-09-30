@@ -10,7 +10,6 @@
 
 using namespace geode::prelude;
 
-// ---------------- GLOBAL FLAGS ----------------
 static bool g_noclip=false, g_autoJump=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
             g_jumpHack=false, g_copyHack=false, g_autoSafeMode=false,
@@ -22,7 +21,6 @@ static bool g_noclip=false, g_autoJump=false, g_spinbot=false, g_shake=false,
 static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f, g_spinPhase = 0.0f;
 static int   g_clickCount = 0;
 
-// ---------------- HELPERS ----------------
 static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
     return ButtonSprite::create(state ? on : off);
 }
@@ -32,9 +30,6 @@ static ButtonSprite* makeNumber(float v) {
         "bigFont.fnt", "GJ_button_01.png", 30.f, 0.7f);
 }
 
-// ============================================================
-//                    VALUE INPUT POPUP
-// ============================================================
 class ValueInputPopup : public CCLayer {
 protected:
     bool m_isSpeed = true;
@@ -49,7 +44,6 @@ public:
 
     bool init() override {
         if (!CCLayer::init()) return false;
-
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width  / 2.f;
         float cy = ws.height / 2.f;
@@ -63,8 +57,7 @@ public:
         this->addChild(p);
 
         auto t = CCLabelBMFont::create(
-            m_isSpeed ? "Speedhack Value" : "Spinbot Speed",
-            "goldFont.fnt");
+            m_isSpeed ? "Speedhack Value" : "Spinbot Speed", "goldFont.fnt");
         t->setPosition({cx, cy + 90.f});
         t->setScale(0.7f);
         t->setColor({0, 200, 255});
@@ -139,9 +132,6 @@ public:
     void keyBackClicked()    { this->removeFromParentAndCleanup(true); }
 };
 
-// ============================================================
-//                       NEVERLOSE MENU
-// ============================================================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
@@ -272,7 +262,6 @@ public:
         m_tabLegit     = mkTab("Legit",     menu_selector(NeverloseMenu::onTabLegit),     ty[5]);
         m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
 
-        // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -280,7 +269,6 @@ public:
         mn->addChild(m_jumpHackBtn);
         m_mainNodes.push_back(m_jumpHackBtn);
 
-        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -295,7 +283,6 @@ public:
         mn->addChild(m_autoJumpBtn);
         m_rageNodes.push_back(m_autoJumpBtn);
 
-        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60.f, cy + 90.f});
@@ -310,7 +297,6 @@ public:
         mn->addChild(m_autoLDMBtn);
         m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ANTI-AIM
         float lx = cx - 150.f;
         float rx = cx + 150.f;
 
@@ -411,7 +397,6 @@ public:
         m_shUp = mkArrow("+", menu_selector(NeverloseMenu::onSpeedhackUp), {rx + 70.f, cy - 55.f});
         m_antiAimNodes.push_back(m_shUp);
 
-        // CREATE
         m_copyHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Copy Hack: OFF"), this, menu_selector(NeverloseMenu::onCopyHack));
         m_copyHackBtn->setPosition({cx + 60.f, cy + 100.f});
@@ -419,14 +404,14 @@ public:
         mn->addChild(m_copyHackBtn);
         m_createNodes.push_back(m_copyHackBtn);
 
-        // LEGIT
         m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
         m_autoSafeModeBtn->setPosition({cx + 60.f, cy + 130.f});
         m_autoSafeModeBtn->setScale(0.55f);
         mn->addChild(m_autoSafeModeBtn);
         m_legitNodes.push_back(m_autoSafeModeBtn);
-                m_cheatIndBtn = CCMenuItemSpriteExtra::create(
+
+        m_cheatIndBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Cheat Ind: OFF"), this, menu_selector(NeverloseMenu::onCheatIndicator));
         m_cheatIndBtn->setPosition({cx + 60.f, cy + 60.f});
         m_cheatIndBtn->setScale(0.55f);
@@ -437,7 +422,7 @@ public:
             ButtonSprite::create("CPS: OFF"), this, menu_selector(NeverloseMenu::onCPS));
         m_cpsBtn->setPosition({cx + 60.f, cy - 10.f});
         m_cpsBtn->setScale(0.55f);
-        mn->addChild(m_cpsBtn);
+                mn->addChild(m_cpsBtn);
         m_legitNodes.push_back(m_cpsBtn);
 
         m_timeBtn = CCMenuItemSpriteExtra::create(
@@ -581,9 +566,6 @@ public:
     void keyBackClicked()   { this->removeFromParentAndCleanup(true); }
 };
 
-// ============================================================
-//                     PLAYLAYER HOOK
-// ============================================================
 class $modify(NLPlayLayer, PlayLayer) {
     struct Fields {
         CCLabelBMFont* cpsLabel   = nullptr;
@@ -598,7 +580,6 @@ class $modify(NLPlayLayer, PlayLayer) {
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
-
         auto ws = CCDirector::get()->getWinSize();
         auto f = m_fields.self();
         if (!f) return true;
@@ -644,7 +625,6 @@ class $modify(NLPlayLayer, PlayLayer) {
 
     void update(float dt) {
         PlayLayer::update(dt);
-
         auto f = m_fields.self();
         if (!f) return;
 
@@ -677,7 +657,6 @@ class $modify(NLPlayLayer, PlayLayer) {
         f->timeAlive += dt;
         f->frameCount++;
         f->fpsTimer += dt;
-
         if (f->fpsTimer >= 0.5f) {
             float fps = f->frameCount / f->fpsTimer;
             if (f->fpsLabel)
@@ -687,7 +666,6 @@ class $modify(NLPlayLayer, PlayLayer) {
         }
         if (f->timeLabel)
             f->timeLabel->setString(CCString::createWithFormat("Time: %.2f", f->timeAlive)->getCString());
-
         if (f->cpsLabel) {
             f->cpsTimer += dt;
             if (f->cpsTimer >= 1.0f) {
@@ -706,27 +684,20 @@ class $modify(NLPlayLayer, PlayLayer) {
     }
 };
 
-// ============================================================
-//                     PAUSELAYER HOOK
-// ============================================================
 class $modify(NLPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
-
         auto ws = CCDirector::get()->getWinSize();
         auto spr = ButtonSprite::create("NL");
         if (!spr) return;
         spr->setScale(0.9f);
-
         auto btn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NLPauseLayer::onOpenNLMenu));
         btn->setPosition({ws.width - 40.f, ws.height - 60.f});
-
         auto menu = CCMenu::create();
         menu->setPosition({0,0});
         menu->addChild(btn);
         this->addChild(menu, 100);
     }
-
     void onOpenNLMenu(CCObject*) {
         auto scene = CCDirector::get()->getRunningScene();
         if (!scene) return;
@@ -735,9 +706,6 @@ class $modify(NLPauseLayer, PauseLayer) {
     }
 };
 
-// ============================================================
-//                   PLAYEROBJECT HOOK
-// ============================================================
 class $modify(NLPlayerObject, PlayerObject) {
     void update(float dt) {
         if (g_aaEnabled) {
@@ -752,24 +720,12 @@ class $modify(NLPlayerObject, PlayerObject) {
     }
 };
 
-// ============================================================
-//                  LEVELINFOLAYER HOOK
-// ============================================================
 class $modify(NLLevelInfoLayer, LevelInfoLayer) {
     void onPlay(CCObject* sender) {
-        if (g_copyHack && m_level) {
-            auto str = m_level->m_levelString;
-            if (!str.empty()) {
-                cocos2d::CCCopyStringToClipboard(str.c_str());
-            }
-        }
         LevelInfoLayer::onPlay(sender);
     }
 };
 
-// ============================================================
-//                          ENTRY
-// ============================================================
 $execute {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 }
