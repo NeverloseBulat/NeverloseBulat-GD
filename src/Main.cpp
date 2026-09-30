@@ -3,8 +3,6 @@
 #include <Geode/modify/PauseLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
-#include <Geode/ui/Notification.hpp>
-#include <Geode/utils/clipboard.hpp>
 
 #include <vector>
 #include <cstdlib>
@@ -252,14 +250,12 @@ public:
         mn->setPosition({0,0});
         this->addChild(mn);
 
-        // Close
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         if (cs) cs->setScale(1.2f);
         auto cb = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         cb->setPosition({cx + 360.f, cy + 235.f});
         mn->addChild(cb);
 
-        // Tabs
         float ty[7] = {cy + 105.f, cy + 70.f, cy + 35.f, cy, cy - 35.f, cy - 70.f, cy - 105.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
             auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb_);
@@ -276,7 +272,7 @@ public:
         m_tabLegit     = mkTab("Legit",     menu_selector(NeverloseMenu::onTabLegit),     ty[5]);
         m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
 
-        // MAIN PAGE
+        // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -284,7 +280,7 @@ public:
         mn->addChild(m_jumpHackBtn);
         m_mainNodes.push_back(m_jumpHackBtn);
 
-        // RAGE PAGE
+        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -299,7 +295,7 @@ public:
         mn->addChild(m_autoJumpBtn);
         m_rageNodes.push_back(m_autoJumpBtn);
 
-        // VISUALS PAGE
+        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60.f, cy + 90.f});
@@ -314,7 +310,7 @@ public:
         mn->addChild(m_autoLDMBtn);
         m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ANTI-AIM PAGE
+        // ANTI-AIM
         float lx = cx - 150.f;
         float rx = cx + 150.f;
 
@@ -328,7 +324,6 @@ public:
             return b;
         };
 
-        // LEFT — Spinbot
         m_spinbotBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({lx, cy + 150.f});
@@ -376,7 +371,6 @@ public:
         mn->addChild(m_aaFlipYBtn);
         m_antiAimNodes.push_back(m_aaFlipYBtn);
 
-        // RIGHT — Shake / Gravite / Speedhack
         m_shakeBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Shake: OFF"), this, menu_selector(NeverloseMenu::onShake));
         m_shakeBtn->setPosition({rx, cy + 150.f});
@@ -417,7 +411,7 @@ public:
         m_shUp = mkArrow("+", menu_selector(NeverloseMenu::onSpeedhackUp), {rx + 70.f, cy - 55.f});
         m_antiAimNodes.push_back(m_shUp);
 
-        // CREATE PAGE
+        // CREATE
         m_copyHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Copy Hack: OFF"), this, menu_selector(NeverloseMenu::onCopyHack));
         m_copyHackBtn->setPosition({cx + 60.f, cy + 100.f});
@@ -425,14 +419,14 @@ public:
         mn->addChild(m_copyHackBtn);
         m_createNodes.push_back(m_copyHackBtn);
 
-        // LEGIT PAGE
+        // LEGIT
         m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
-                m_autoSafeModeBtn->setScale(0.55f);
+        m_autoSafeModeBtn->setPosition({cx + 60.f, cy + 130.f});
+        m_autoSafeModeBtn->setScale(0.55f);
         mn->addChild(m_autoSafeModeBtn);
         m_legitNodes.push_back(m_autoSafeModeBtn);
-
-        m_cheatIndBtn = CCMenuItemSpriteExtra::create(
+                m_cheatIndBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Cheat Ind: OFF"), this, menu_selector(NeverloseMenu::onCheatIndicator));
         m_cheatIndBtn->setPosition({cx + 60.f, cy + 60.f});
         m_cheatIndBtn->setScale(0.55f);
@@ -460,7 +454,7 @@ public:
         mn->addChild(m_fpsBtn);
         m_legitNodes.push_back(m_fpsBtn);
 
-        // COSMETICS PAGE
+        // COSMETICS
         m_unlockIconsBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Icons: OFF"), this, menu_selector(NeverloseMenu::onUnlockIcons));
         m_unlockIconsBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -499,7 +493,6 @@ public:
         return true;
     }
 
-    // ---- Tabs ----
     void onTabMain(CCObject*)      { setPage(0); }
     void onTabRage(CCObject*)      { setPage(1); }
     void onTabVisuals(CCObject*)   { setPage(2); }
@@ -508,7 +501,6 @@ public:
     void onTabLegit(CCObject*)     { setPage(5); }
     void onTabCosmetics(CCObject*) { setPage(6); }
 
-    // ---- Toggles ----
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)   { g_noclip   = !g_noclip;   refreshButtons(); }
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
@@ -769,8 +761,10 @@ class $modify(NLPlayerObject, PlayerObject) {
 class $modify(NLLevelInfoLayer, LevelInfoLayer) {
     void onPlay(CCObject* sender) {
         if (g_copyHack && m_level) {
-            geode::utils::clipboard::write(std::string(m_level->m_levelString));
-            Notification::create("Level string copied", NotificationIcon::Success)->show();
+            auto str = m_level->m_levelString;
+            if (!str.empty()) {
+                cocos2d::CCCopyStringToClipboard(str.c_str());
+            }
         }
         LevelInfoLayer::onPlay(sender);
     }
