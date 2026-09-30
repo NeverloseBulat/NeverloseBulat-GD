@@ -166,7 +166,7 @@ public:
 
     bool init() {
         if (!CCLayer::init()) return false;
-        auto ws CCDirector::get()->getWinSize();
+        auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2, cy = ws.height / 2;
 
         auto overlay = CCLayerColor::create({0, 0, 0, 180});
@@ -389,7 +389,7 @@ public:
     void onClose(CCObject*) {
         this->runAction(CCSequence::create(
             CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-            CCCallFunc::create (this, callfunc_selector(NeverloseMenu::removeMe)),
+            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
             nullptr));
     }
     void removeMe() { this->removeFromParentAndCleanup(true); }
