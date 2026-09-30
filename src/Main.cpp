@@ -275,12 +275,8 @@ public:
         setPage(0);
         refreshButtons();
 
-        this->setOpacity(0);
         this->setScale(0.3f);
-        this->runAction(CCSpawn::create(
-            CCFadeTo::create(0.20f, 255),
-            CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)),
-            nullptr));
+        this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)));
 
         this->setKeypadEnabled(true);
         this->setTouchEnabled(true);
@@ -315,8 +311,8 @@ public:
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
-        void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
-    void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
+    void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
+        void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
     void onNLGravite(CCObject*){ g_nlGravite = !g_nlGravite; g_gravTimer = 0.f; refreshButtons(); }
 
     void onSpinUp(CCObject*) {
@@ -365,10 +361,7 @@ public:
         if (m_closing) return;
         m_closing = true;
         this->runAction(CCSequence::create(
-            CCSpawn::create(
-                CCFadeTo::create(0.15f, 0),
-                CCEaseBackIn::create(CCScaleTo::create(0.18f, 0.4f)),
-                nullptr),
+            CCEaseBackIn::create(CCScaleTo::create(0.18f, 0.4f)),
             CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeFromParentAndCleanup)),
             nullptr));
     }
