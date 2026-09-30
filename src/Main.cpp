@@ -265,12 +265,11 @@ public:
     void registerWithTouchDispatcher() override {
         CCDirector::get()->getTouchDispatcher()->addTargetedDelegate(this, -501, true);
     }
+
     bool ccTouchBegan(CCTouch* touch, CCEvent*) override {
-        auto worldPos = touch->getLocation();
-        auto nodePos  = this->convertToNodeSpace(worldPos);
-        if (nodePos.x < -400.f || nodePos.x > 400.f || nodePos.y < -270.f || nodePos.y > 270.f)
-            return false;
-        m_dragging = true; m_dragStart = worldPos - this->getPosition(); return true;
+        m_dragging = true;
+        m_dragStart = touch->getLocation() - this->getPosition();
+        return true;
     }
     void ccTouchMoved(CCTouch* touch, CCEvent*) override {
         if (m_dragging) this->setPosition(touch->getLocation() - m_dragStart);
@@ -292,15 +291,15 @@ public:
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
     void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
-    void onShake(CCObject*)    { g_shake = !g_shake;       refreshButtons(); }
+    void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
     void onNLGravite(CCObject*){ g_nlGravite = !g_nlGravite; g_gravTimer = 0.f; refreshButtons(); }
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.f; if (g_spinSpeed > 500.f) g_spinSpeed = 500.f;
-                if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
+        if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
     }
     void onSpinDown(CCObject*) {
         g_spinSpeed -= 1.f; if (g_spinSpeed < 1.f) g_spinSpeed = 1.f;
-        if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
+                if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
     }
     void onSpinValue(CCObject*) { if (auto p = ValueInputPopup::create(false)) this->addChild(p, 9); }
     void onSpeedhackUp(CCObject*) {
@@ -352,6 +351,7 @@ class $modify(NLPlayLayer, PlayLayer) {
         int   frameCount = 0;
         float fpsTimer   = 0.0f;
         float cpsTimer   = 0.0f;
+        bool  jumpHeld   = false;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
@@ -378,6 +378,11 @@ class $modify(NLPlayLayer, PlayLayer) {
         return true;
     }
 
+    void handleButton(bool down, int button, bool isPlayer1) override {
+        PlayLayer::handleButton(down, button, isPlayer1);
+        if (button == 1) m_fields->jumpHeld = down;
+    }
+
     void update(float dt) {
         PlayLayer::update(dt);
         auto f = m_fields.self();
@@ -388,17 +393,17 @@ class $modify(NLPlayLayer, PlayLayer) {
             if (g_autoJump || g_jumpHack) player->pushButton(PlayerButton::Jump);
         }
 
-        if (g_shake) {
+        // SHAKE: флип при удержании прыжка
+        if (g_shake && player && f->jumpHeld) {
             g_shakeTimer += dt;
-            if (m_objectLayer) {
-                float offX = ((rand() % 100) - 50) / 50.0f * 15.0f;
-                float offY = ((rand() % 100) - 50) / 50.0f * 15.0f;
-                m_objectLayer->setPosition({offX, offY});
+            if (g_shakeTimer >= 0.05f) {
+                g_shakeTimer = 0.f;
+                g_gravState = !g_gravState;
+                player->flipGravity(g_gravState, true);
             }
-        } else if (m_objectLayer) {
-            m_objectLayer->setPosition({0.f, 0.f});
         }
 
+        // NL Gravite
         if (g_nlGravite && player) {
             g_gravTimer += dt;
             if (g_gravTimer >= 0.15f) {
@@ -432,7 +437,6 @@ class $modify(NLPlayLayer, PlayLayer) {
     void onQuit() {
         if (g_speedhack && CCDirector::get() && CCDirector::get()->getScheduler())
             CCDirector::get()->getScheduler()->setTimeScale(1.0f);
-        if (m_objectLayer) m_objectLayer->setPosition({0, 0});
         PlayLayer::onQuit();
     }
 };
@@ -466,12 +470,18 @@ class $modify(NLPauseLayer, PauseLayer) {
 class $modify(NLPlayerObject, PlayerObject) {
     void update(float dt) {
         PlayerObject::update(dt);
+
+        // SPINBOT: скорость зависит от g_spinSpeed
         if (g_spinbot) {
-            g_spinPhase += g_spinSpeed * dt * 10.f;
+            g_spinPhase += g_spinSpeed * 60.f * dt;
+            if (g_spinPhase > 100000.f) g_spinPhase -= 100000.f;
             this->setRotation(g_spinPhase);
         } else {
             this->setRotation(0.f);
+            g_spinPhase = 0.f;
         }
+
+        // ANTI-AIM
         if (g_aaEnabled) {
             if (g_aaFlipX) this->setScaleX(-1.0f);
             if (g_aaFlipY) this->setScaleY(-1.0f);
