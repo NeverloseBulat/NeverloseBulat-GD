@@ -22,6 +22,7 @@ static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
              g_spinPhase = 0.0f, g_gravTimer = 0.0f;
 static bool  g_gravState = false;
 static int   g_clickCount = 0;
+static int   g_themeIndex = 0;
 
 static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
     return ButtonSprite::create(state ? on : off);
@@ -56,7 +57,7 @@ public:
         auto v = CCLabelBMFont::create(
             CCString::createWithFormat("%.2f", m_isSpeed ? g_speed : g_spinSpeed)->getCString(),
             "goldFont.fnt");
-        v->setPosition({cx, cy + 30.f}); v->setScale(0.9f); v->setColor({255,255,255});
+        v->setPosition({cx, cy + 30.f}); v->setScale(0.9f);
         v->setID("value-label"); this->addChild(v);
         auto m = CCMenu::create(); m->setPosition({0,0}); this->addChild(m);
         auto mk = [&](const char* tt, cocos2d::SEL_MenuHandler cb, float x, float y){
@@ -68,8 +69,7 @@ public:
         mk("+1",   menu_selector(ValueInputPopup::onP1),   cx + 70.f,  cy - 30.f);
         mk("+500", menu_selector(ValueInputPopup::onP500), cx + 200.f, cy - 30.f);
         mk("OK",   menu_selector(ValueInputPopup::onCancel), cx, cy - 110.f);
-        this->setTouchEnabled(true);
-        this->setKeypadEnabled(true);
+        this->setTouchEnabled(true); this->setKeypadEnabled(true);
         return true;
     }
     void ref() {
@@ -107,18 +107,44 @@ protected:
         *m_nlGraviteBtn=nullptr, *m_spinDown=nullptr, *m_spinUp=nullptr,
         *m_spinValueBtn=nullptr, *m_speedhackBtn=nullptr, *m_shDown=nullptr,
         *m_shUp=nullptr, *m_shValueBtn=nullptr, *m_aaEnabledBtn=nullptr,
-        *m_aaFlipXBtn=nullptr, *m_aaFlipYBtn=nullptr,
+        *m_aaFlipXBtn=nullptr, *m_aaFlipYBtn=nullptr, *m_themeBtn=nullptr,
         *m_tabMain=nullptr, *m_tabRage=nullptr, *m_tabVisuals=nullptr,
         *m_tabAntiAim=nullptr, *m_tabCreate=nullptr, *m_tabLegit=nullptr,
         *m_tabCosmetics=nullptr;
+
+    CCScale9Sprite* m_mainPanel = nullptr;
+    CCScale9Sprite* m_sidePanel = nullptr;
+
     bool m_dragging = false;
+    bool m_closing  = false;
     CCPoint m_dragStart = {0,0};
+    int m_curPage = 0;
+
 public:
     static NeverloseMenu* create() {
         auto r = new NeverloseMenu();
         if (!r) return nullptr;
         if (r->init()) { r->autorelease(); return r; }
         delete r; return nullptr;
+    }
+
+    // -------- тема --------
+    ccColor3B themeColor() {
+        switch (g_themeIndex % 6) {
+            case 0: return {15,15,15};    // чёрный
+            case 1: return {20,30,60};    // синий
+            case 2: return {60,15,15};    // красный
+            case 3: return {15,50,20};    // зелёный
+            case 4: return {45,15,60};    // фиолетовый
+            default: return {55,45,10};   // золотой
+        }
+    }
+    void applyTheme() {
+        if (m_mainPanel) m_mainPanel->setColor(themeColor());
+        if (m_sidePanel) {
+            auto c = themeColor();
+            m_sidePanel->setColor({(GLubyte)std::min(255, c.r+10), (GLubyte)std::min(255, c.g+10), (GLubyte)std::min(255, c.b+15)});
+        }
     }
 
     void refreshButtons() {
@@ -150,6 +176,17 @@ public:
 
     void setPage(int p) {
         if (p < 0) p = 0; if (p > 6) p = 6;
+
+        // ----- анимация смены вкладки -----
+        if (p != m_curPage && m_mainPanel) {
+            m_mainPanel->stopAllActions();
+            m_mainPanel->runAction(CCSequence::create(
+                CCScaleTo::create(0.08f, 0.96f),
+                CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)),
+                nullptr));
+        }
+        m_curPage = p;
+
         for (auto n : m_mainNodes)      if (n) n->setVisible(p == 0);
         for (auto n : m_rageNodes)      if (n) n->setVisible(p == 1);
         for (auto n : m_visualsNodes)   if (n) n->setVisible(p == 2);
@@ -157,6 +194,7 @@ public:
         for (auto n : m_createNodes)    if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)     if (n) n->setVisible(p == 5);
         for (auto n : m_cosmeticsNodes) if (n) n->setVisible(p == 6);
+
         if (m_tabMain)      m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         if (m_tabRage)      m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
         if (m_tabVisuals)   m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
@@ -171,12 +209,15 @@ public:
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2.f, cy = ws.height / 2.f;
         this->addChild(CCLayerColor::create({0,0,0,180}), -1);
-        auto pn = CCScale9Sprite::create("GJ_square01.png");
-        pn->setContentSize({780.f, 520.f}); pn->setPosition({cx, cy});
-        pn->setColor({15,15,15}); this->addChild(pn);
-        auto sb = CCScale9Sprite::create("GJ_square01.png");
-        sb->setContentSize({220.f, 500.f}); sb->setPosition({cx - 270.f, cy});
-        sb->setColor({25,25,30}); this->addChild(sb);
+
+        m_mainPanel = CCScale9Sprite::create("GJ_square01.png");
+        m_mainPanel->setContentSize({780.f, 520.f}); m_mainPanel->setPosition({cx, cy});
+        m_mainPanel->setColor(themeColor()); this->addChild(m_mainPanel);
+
+        m_sidePanel = CCScale9Sprite::create("GJ_square01.png");
+        m_sidePanel->setContentSize({220.f, 500.f}); m_sidePanel->setPosition({cx - 270.f, cy});
+        m_sidePanel->setColor({25,25,30}); this->addChild(m_sidePanel);
+
         auto lg = CCLabelBMFont::create("NEVERLOSE", "goldFont.fnt");
         lg->setPosition({cx - 270.f, cy + 215.f}); lg->setScale(0.65f); this->addChild(lg);
         auto mn = CCMenu::create(); mn->setPosition({0,0}); this->addChild(mn);
@@ -184,6 +225,7 @@ public:
         if (cs) cs->setScale(1.2f);
         auto cb = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         cb->setPosition({cx + 360.f, cy + 235.f}); mn->addChild(cb);
+
         float ty[7] = {cy + 105.f, cy + 70.f, cy + 35.f, cy, cy - 35.f, cy - 70.f, cy - 105.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
             auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb_);
@@ -202,14 +244,19 @@ public:
             btn->setPosition(pos); btn->setScale(sc); mn->addChild(btn); vec.push_back(btn);
         };
 
+        // MAIN
         addBtn(m_jumpHackBtn, "Jump Hack: OFF", menu_selector(NeverloseMenu::onJumpHack), {cx + 60.f, cy + 130.f}, 0.55f, m_mainNodes);
+        addBtn(m_themeBtn,    "Theme",          menu_selector(NeverloseMenu::onTheme),    {cx + 60.f, cy + 60.f},  0.55f, m_mainNodes);
+
+        // RAGE
         addBtn(m_noclipBtn,   "Noclip: OFF",    menu_selector(NeverloseMenu::onNoclip),   {cx + 60.f, cy + 130.f}, 0.55f, m_rageNodes);
         addBtn(m_autoJumpBtn, "AutoJump: OFF",  menu_selector(NeverloseMenu::onAutoJump), {cx + 60.f, cy + 60.f},  0.55f, m_rageNodes);
+
+        // VISUALS
         addBtn(m_ldmBtn,      "LDM: OFF",       menu_selector(NeverloseMenu::onLDM),      {cx + 60.f, cy + 90.f},  0.55f, m_visualsNodes);
         addBtn(m_autoLDMBtn,  "Auto LDM: OFF",  menu_selector(NeverloseMenu::onAutoLDM),  {cx + 60.f, cy + 25.f},  0.55f, m_visualsNodes);
 
         float lx = cx - 150.f, rx = cx + 150.f;
-
         auto mkArrow = [&](const char* txt, cocos2d::SEL_MenuHandler cb_, CCPoint pos) {
             auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(txt), this, cb_);
             b->setPosition(pos); b->setScale(0.9f); mn->addChild(b); return b;
@@ -254,9 +301,15 @@ public:
 
         setPage(0);
         refreshButtons();
-        this->setPosition({0.f, 0.f});
+
+        // ---- открытие: fade-in + scale bounce ----
+        this->setOpacity(0);
         this->setScale(0.3f);
-        this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)));
+        this->runAction(CCSpawn::create(
+            CCFadeTo::create(0.20f, 255),
+            CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)),
+            nullptr));
+
         this->setKeypadEnabled(true);
         this->setTouchEnabled(true);
         return true;
@@ -271,6 +324,7 @@ public:
         m_dragStart = touch->getLocation() - this->getPosition();
         return true;
     }
+       }
     void ccTouchMoved(CCTouch* touch, CCEvent*) override {
         if (m_dragging) this->setPosition(touch->getLocation() - m_dragStart);
     }
@@ -293,13 +347,15 @@ public:
     void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
     void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
     void onNLGravite(CCObject*){ g_nlGravite = !g_nlGravite; g_gravTimer = 0.f; refreshButtons(); }
+    void onTheme(CCObject*)    { g_themeIndex++; applyTheme(); }
+
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.f; if (g_spinSpeed > 500.f) g_spinSpeed = 500.f;
         if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
     }
     void onSpinDown(CCObject*) {
         g_spinSpeed -= 1.f; if (g_spinSpeed < 1.f) g_spinSpeed = 1.f;
-                if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
+        if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
     }
     void onSpinValue(CCObject*) { if (auto p = ValueInputPopup::create(false)) this->addChild(p, 9); }
     void onSpeedhackUp(CCObject*) {
@@ -334,8 +390,20 @@ public:
     void onAAEnabled(CCObject*)      { g_aaEnabled      = !g_aaEnabled;      refreshButtons(); }
     void onAAFlipX(CCObject*)        { g_aaFlipX        = !g_aaFlipX;        refreshButtons(); }
     void onAAFlipY(CCObject*)        { g_aaFlipY        = !g_aaFlipY;        refreshButtons(); }
-    void onClose(CCObject*) { this->removeFromParentAndCleanup(true); }
-    void keyBackClicked()   { this->removeFromParentAndCleanup(true); }
+
+    // ---- закрытие с анимацией ----
+    void onClose(CCObject*) {
+        if (m_closing) return;
+        m_closing = true;
+        this->runAction(CCSequence::create(
+            CCSpawn::create(
+                CCFadeTo::create(0.15f, 0),
+                CCEaseBackIn::create(CCScaleTo::create(0.18f, 0.4f)),
+                nullptr),
+            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeFromParentAndCleanup)),
+            nullptr));
+    }
+    void keyBackClicked() { this->onClose(nullptr); }
 };
 
 // ============================================================
@@ -351,7 +419,6 @@ class $modify(NLPlayLayer, PlayLayer) {
         int   frameCount = 0;
         float fpsTimer   = 0.0f;
         float cpsTimer   = 0.0f;
-        bool  jumpHeld   = false;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
@@ -376,14 +443,8 @@ class $modify(NLPlayLayer, PlayLayer) {
             if (f->cheatLabel) { f->cheatLabel->setScale(0.5f); f->cheatLabel->setPosition({ws.width - 60.f, ws.height - 20.f}); f->cheatLabel->setColor({255,50,50}); this->addChild(f->cheatLabel, 100); }
         }
         return true;
-    }
 
-    void handleButton(bool down, int button, bool isPlayer1) override {
-        PlayLayer::handleButton(down, button, isPlayer1);
-        if (button == 1) m_fields->jumpHeld = down;
-    }
-
-    void update(float dt) {
+    void update(float dt) override {
         PlayLayer::update(dt);
         auto f = m_fields.self();
         if (!f) return;
@@ -391,25 +452,21 @@ class $modify(NLPlayLayer, PlayLayer) {
         auto player = m_player1;
         if (player) {
             if (g_autoJump || g_jumpHack) player->pushButton(PlayerButton::Jump);
-        }
-
-        // SHAKE: флип при удержании прыжка
-        if (g_shake && player && f->jumpHeld) {
-            g_shakeTimer += dt;
-            if (g_shakeTimer >= 0.05f) {
-                g_shakeTimer = 0.f;
-                g_gravState = !g_gravState;
-                player->flipGravity(g_gravState, true);
+            if (g_shake) {
+                g_shakeTimer += dt;
+                if (g_shakeTimer >= 0.08f) {
+                    g_shakeTimer = 0.f;
+                    g_gravState = !g_gravState;
+                    player->flipGravity(g_gravState, true);
+                }
             }
-        }
-
-        // NL Gravite
-        if (g_nlGravite && player) {
-            g_gravTimer += dt;
-            if (g_gravTimer >= 0.15f) {
-                g_gravTimer = 0.f;
-                g_gravState = !g_gravState;
-                player->flipGravity(g_gravState, true);
+            if (g_nlGravite) {
+                g_gravTimer += dt;
+                if (g_gravTimer >= 0.15f) {
+                    g_gravTimer = 0.f;
+                    g_gravState = !g_gravState;
+                    player->flipGravity(g_gravState, true);
+                }
             }
         }
 
@@ -468,10 +525,8 @@ class $modify(NLPauseLayer, PauseLayer) {
 //                   PLAYEROBJECT HOOK
 // ============================================================
 class $modify(NLPlayerObject, PlayerObject) {
-    void update(float dt) {
+    void update(float dt) override {
         PlayerObject::update(dt);
-
-        // SPINBOT: скорость зависит от g_spinSpeed
         if (g_spinbot) {
             g_spinPhase += g_spinSpeed * 60.f * dt;
             if (g_spinPhase > 100000.f) g_spinPhase -= 100000.f;
@@ -480,8 +535,6 @@ class $modify(NLPlayerObject, PlayerObject) {
             this->setRotation(0.f);
             g_spinPhase = 0.f;
         }
-
-        // ANTI-AIM
         if (g_aaEnabled) {
             if (g_aaFlipX) this->setScaleX(-1.0f);
             if (g_aaFlipY) this->setScaleY(-1.0f);
@@ -498,9 +551,6 @@ class $modify(NLLevelInfoLayer, LevelInfoLayer) {
     void onPlay(CCObject* sender) { LevelInfoLayer::onPlay(sender); }
 };
 
-// ============================================================
-//                          ENTRY
-// ============================================================
 $execute {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 }
