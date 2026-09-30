@@ -117,6 +117,8 @@ protected:
     CCMenuItemSpriteExtra *m_scrollDownBtn = nullptr;
     int m_tabOffset = 0;
     const int VISIBLE_TABS = 4;
+    CCPoint m_swipeStart;
+    bool m_swiping = false;
 
 public:
     static NeverloseMenu* create() {
@@ -164,8 +166,44 @@ public:
         m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
     }
 
+    void registerWithTouchDispatcher() {
+        cocos2d::CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(this, 0, false);
+    }
+    bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        auto loc = touch->getLocation();
+        auto ws = CCDirector::get()->getWinSize();
+        float sx = ws.width / 2 - 270;
+        float sy = ws.height / 2;
+        if (std::abs(loc.x - sx) < 110 && std::abs(loc.y - sy) < 250) {
+            m_swipeStart = loc;
+            m_swiping = true;
+            return true;
+        }
+        return false;
+    }
+    void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        if (!m_swiping) return;
+        auto loc = touch->getLocation();
+        float dy = loc.y - m_swipeStart.y;
+        if (std::abs(dy) > 40) {
+            if (dy > 0) {
+                if (m_tabOffset > 0) { m_tabOffset--; updateTabVisibility(); }
+            } else {
+                if (m_tabOffset < (int)m_tabButtons.size() - VISIBLE_TABS) { m_tabOffset++; updateTabVisibility(); }
+            }
+            m_swipeStart = loc;
+        }
+    }
+    void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        m_swiping = false;
+    }
+    void ccTouchCancelled(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        m_swiping = false;
+    }
+
     bool init() {
         if (!CCLayer::init()) return false;
+        this->setTouchEnabled(true);
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2, cy = ws.height / 2;
 
@@ -389,7 +427,7 @@ public:
     void onClose(CCObject*) {
         this->runAction(CCSequence::create(
             CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-         te(this, callfunc_selector(NeverloseMenu::removeMe)),
+            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
             nullptr));
     }
     void removeMe() { this->removeFromParentAndCleanup(true); }
