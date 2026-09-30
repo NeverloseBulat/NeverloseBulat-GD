@@ -22,9 +22,8 @@ static bool g_aaFlipY = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
 
-class ValueInputPopup : public CCLayer, public TextInputDelegate {
+class ValueInputPopup : public CCLayer {
 protected:
-    CCTextInputNode* m_input = nullptr;
     bool m_isSpeed = true;
 public:
     static ValueInputPopup* create(bool isSpeed) {
@@ -39,46 +38,65 @@ public:
         auto bg = CCLayerColor::create({0, 0, 0, 200});
         this->addChild(bg, -1);
         auto panel = CCScale9Sprite::create("GJ_square01.png");
-        panel->setContentSize({340, 220});
+        panel->setContentSize({520, 260});
         panel->setPosition(ws / 2);
         this->addChild(panel);
         auto title = CCLabelBMFont::create(m_isSpeed ? "Speedhack Value" : "Spinbot Speed", "goldFont.fnt");
-        title->setPosition({ws.width / 2, ws.height / 2 + 70});
+        title->setPosition({ws.width / 2, ws.height / 2 + 90});
         title->setScale(0.7f);
         title->setColor({0, 200, 255});
         this->addChild(title);
-        m_input = CCTextInputNode::create(220, 40, "1.0", "bigFont.fnt");
-        m_input->setPosition({ws.width / 2, ws.height / 2 - 5});
-        m_input->setDelegate(this);
-        if (m_isSpeed) m_input->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
-        else m_input->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
-        this->addChild(m_input);
+        auto value = CCLabelBMFont::create(
+            CCString::createWithFormat("%.2f", m_isSpeed ? g_speed : g_spinSpeed)->getCString(),
+            "goldFont.fnt");
+        value->setPosition({ws.width / 2, ws.height / 2 + 30});
+        value->setScale(0.9f);
+        value->setColor({255, 255, 255});
+        value->setID("value-label");
+        this->addChild(value);
         auto menu = CCMenu::create();
         menu->setPosition({0, 0});
         this->addChild(menu);
-        auto okBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("OK"), this, menu_selector(ValueInputPopup::onOK));
-        okBtn->setPosition({ws.width / 2 - 60, ws.height / 2 - 70});
-        menu->addChild(okBtn);
-        auto cancelBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Cancel"), this, menu_selector(ValueInputPopup::onCancel));
-        cancelBtn->setPosition({ws.width / 2 + 60, ws.height / 2 - 70});
-        menu->addChild(cancelBtn);
-        this->setKeypadEnabled(true);
+        auto mkBtn = [&](const char* t, cocos2d::SEL_MenuHandler cb, float x, float y) {
+            auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb);
+            b->setPosition({x, y});
+            menu->addChild(b);
+        };
+        float cx = ws.width / 2, cy = ws.height / 2;
+        mkBtn("-500", menu_selector(ValueInputPopup::onMinus500), cx - 200, cy - 30);
+        mkBtn("-1",   menu_selector(ValueInputPopup::onMinus1),   cx - 70,  cy - 30);
+        mkBtn("+1",   menu_selector(ValueInputPopup::onPlus1),    cx + 70,  cy - 30);
+        mkBtn("+500", menu_selector(ValueInputPopup::onPlus500),  cx + 200, cy - 30);
+        mkBtn("OK",   menu_selector(ValueInputPopup::onCancel),   cx,      cy - 110);
         return true;
     }
-    void onOK(CCObject*) {
-        std::string s = m_input->getString();
-        float v = (float)std::atof(s.c_str());
-        if (m_isSpeed) {
-            if (v < 0.0f) v = 0.0f;
-            if (v > 100.0f) v = 100.0f;
-            g_speed = v;
-            if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        } else {
-            if (v < 1.0f) v = 1.0f;
-            if (v > 100.0f) v = 100.0f;
-            g_spinSpeed = v;
+    void refreshValue() {
+        auto lbl = this->getChildByID("value-label");
+        if (lbl) {
+            auto l = typeinfo_cast<CCLabelBMFont*>(lbl);
+            if (l) l->setString(CCString::createWithFormat("%.2f", m_isSpeed ? g_speed : g_spinSpeed)->getCString());
         }
-        this->removeFromParentAndCleanup(true);
+    }
+    void applySpeed() { if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed); }
+    void onMinus500(CCObject*) {
+        if (m_isSpeed) { g_speed -= 500.0f; if (g_speed < 0) g_speed = 0; applySpeed(); }
+        else { g_spinSpeed -= 500.0f; if (g_spinSpeed < 1) g_spinSpeed = 1; }
+        refreshValue();
+    }
+    void onMinus1(CCObject*) {
+        if (m_isSpeed) { g_speed -= 1.0f; if (g_speed < 0) g_speed = 0; applySpeed(); }
+        else { g_spinSpeed -= 1.0f; if (g_spinSpeed < 1) g_spinSpeed = 1; }
+        refreshValue();
+    }
+    void onPlus1(CCObject*) {
+        if (m_isSpeed) { g_speed += 1.0f; if (g_speed > 100) g_speed = 100; applySpeed(); }
+        else { g_spinSpeed += 1.0f; if (g_spinSpeed > 500) g_spinSpeed = 500; }
+        refreshValue();
+    }
+    void onPlus500(CCObject*) {
+        if (m_isSpeed) { g_speed += 500.0f; if (g_speed > 100) g_speed = 100; applySpeed(); }
+        else { g_spinSpeed += 500.0f; if (g_spinSpeed > 500) g_spinSpeed = 500; }
+        refreshValue();
     }
     void onCancel(CCObject*) { this->removeFromParentAndCleanup(true); }
     void keyBackClicked() { this->removeFromParentAndCleanup(true); }
@@ -197,8 +215,16 @@ public:
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 300, cy + 200});
+        closeBtn->setPosition({cx + 340, cy - 220});
         menu->addChild(closeBtn);
+
+        m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
+        m_scrollUpBtn->setPosition({cx - 410, cy + 150});
+        menu->addChild(m_scrollUpBtn);
+
+        m_scrollDownBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("v"), this, menu_selector(NeverloseMenu::onScrollDown));
+        m_scrollDownBtn->setPosition({cx - 410, cy - 150});
+        menu->addChild(m_scrollDownBtn);
 
         float tabY[6] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210};
 
@@ -225,14 +251,6 @@ public:
         m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
         m_tabLegit->setPosition({cx - 270, tabY[5]});
         menu->addChild(m_tabLegit); m_tabButtons.push_back(m_tabLegit);
-
-        m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
-        m_scrollUpBtn->setPosition({cx - 270, cy + 195});
-        menu->addChild(m_scrollUpBtn);
-
-        m_scrollDownBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("v"), this, menu_selector(NeverloseMenu::onScrollDown));
-        m_scrollDownBtn->setPosition({cx - 270, cy - 195});
-        menu->addChild(m_scrollDownBtn);
 
         updateTabVisibility();
 
@@ -304,7 +322,7 @@ public:
         m_shDown->setPosition({cx + 30, cy - 230});
         menu->addChild(m_shDown); m_antiAimNodes.push_back(m_shDown);
 
-        m_shValueBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("1.000"), this, menu_selector(NeverloseMenu::onSpeedValue));
+        m_shValueBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("1.00"), this, menu_selector(NeverloseMenu::onSpeedValue));
         m_shValueBtn->setPosition({cx + 110, cy - 230});
         menu->addChild(m_shValueBtn); m_antiAimNodes.push_back(m_shValueBtn);
 
@@ -346,7 +364,7 @@ public:
     void onSpinbot(CCObject*) { g_spinbot = !g_spinbot; refreshButtons(); }
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.0f;
-        if (g_spinSpeed > 100.0f) g_spinSpeed = 100.0f;
+        if (g_spinSpeed > 500.0f) g_spinSpeed = 500.0f;
         m_spinValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString()));
     }
     void onSpinDown(CCObject*) {
@@ -368,16 +386,16 @@ public:
         refreshButtons();
     }
     void onSpeedhackUp(CCObject*) {
-        g_speed += 5.0f;
+        g_speed += 1.0f;
         if (g_speed > 100.0f) g_speed = 100.0f;
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.3f", g_speed)->getCString()));
+        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_speed)->getCString()));
     }
     void onSpeedhackDown(CCObject*) {
-        g_speed -= 5.0f;
+        g_speed -= 1.0f;
         if (g_speed < 0.0f) g_speed = 0.0f;
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.3f", g_speed)->getCString()));
+        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_speed)->getCString()));
     }
     void onSpeedValue(CCObject*) {
         auto popup = ValueInputPopup::create(true);
