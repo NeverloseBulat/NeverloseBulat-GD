@@ -17,11 +17,11 @@ static bool g_speedhack = false;
 static bool g_jumpHack = false;
 static bool g_copyHack = false;
 static bool g_autoSafeMode = false;
+static bool g_aaEnabled = false;
+static bool g_aaFlipX = false;
+static bool g_aaFlipY = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
-
-static CCLabelBMFont* g_speedLabel = nullptr;
-static CCLabelBMFont* g_spinLabel = nullptr;
 
 // ================= POPUP =================
 class ValueInputPopup : public CCLayer, public TextInputDelegate {
@@ -62,11 +62,8 @@ public:
         m_input = CCTextInputNode::create(220, 40, "1.0", "bigFont.fnt");
         m_input->setPosition({ws.width / 2, ws.height / 2 - 5});
         m_input->setDelegate(this);
-        if (m_isSpeed) {
-            m_input->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
-        } else {
-            m_input->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
-        }
+        if (m_isSpeed) m_input->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
+        else m_input->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
         this->addChild(m_input);
 
         auto menu = CCMenu::create();
@@ -94,12 +91,10 @@ public:
             if (v > 100.0f) v = 100.0f;
             g_speed = v;
             if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-            if (g_speedLabel) g_speedLabel->setString(CCString::createWithFormat("%.3f", g_speed)->getCString());
         } else {
             if (v < 1.0f) v = 1.0f;
             if (v > 100.0f) v = 100.0f;
             g_spinSpeed = v;
-            if (g_spinLabel) g_spinLabel->setString(CCString::createWithFormat("%.2f", g_spinSpeed)->getCString());
         }
         this->removeFromParentAndCleanup(true);
     }
@@ -111,26 +106,20 @@ public:
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes;
-
-    // Tabs (могут скроллиться)
     std::vector<CCMenuItemSpriteExtra*> m_tabButtons;
 
     CCMenuItemSpriteExtra *m_jumpHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_copyHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoSafeModeBtn = nullptr;
-
     CCMenuItemSpriteExtra *m_noclipBtn, *m_autoJumpBtn;
     CCMenuItemSpriteExtra *m_ldmBtn, *m_autoLDMBtn;
     CCMenuItemSpriteExtra *m_spinbotBtn, *m_spinDown, *m_spinUp, *m_spinValueBtn;
     CCMenuItemSpriteExtra *m_speedhackBtn, *m_shDown, *m_shUp, *m_shValueBtn;
-
+    CCMenuItemSpriteExtra *m_aaEnabledBtn, *m_aaFlipXBtn, *m_aaFlipYBtn;
     CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate, *m_tabLegit;
     CCMenuItemSpriteExtra *m_scrollUpBtn, *m_scrollDownBtn;
-
-    int m_tabOffset = 0; // смещение скролла вкладок
-    int m_page = 0;
-    const int TOTAL_PAGES = 6;
-    const int VISIBLE_TABS = 4; // сколько вкладок видно одновременно
+    int m_tabOffset = 0;
+    const int VISIBLE_TABS = 4;
 
 public:
     static NeverloseMenu* create() {
@@ -149,9 +138,11 @@ public:
         m_speedhackBtn->setNormalImage(ButtonSprite::create(g_speedhack ? "Speedhack: ON" : "Speedhack: OFF"));
         m_copyHackBtn->setNormalImage(ButtonSprite::create(g_copyHack ? "Copy Hack: ON" : "Copy Hack: OFF"));
         m_autoSafeModeBtn->setNormalImage(ButtonSprite::create(g_autoSafeMode ? "Auto Safe Mode: ON" : "Auto Safe Mode: OFF"));
+        m_aaEnabledBtn->setNormalImage(ButtonSprite::create(g_aaEnabled ? "Anti-Aim: ON" : "Anti-Aim: OFF"));
+        m_aaFlipXBtn->setNormalImage(ButtonSprite::create(g_aaFlipX ? "Flip Back: ON" : "Flip Back: OFF"));
+        m_aaFlipYBtn->setNormalImage(ButtonSprite::create(g_aaFlipY ? "Flip Down: ON" : "Flip Down: OFF"));
     }
 
-    // Обновить видимость вкладок в зависимости от скролла
     void updateTabVisibility() {
         for (int i = 0; i < (int)m_tabButtons.size(); i++) {
             bool visible = (i >= m_tabOffset && i < m_tabOffset + VISIBLE_TABS);
@@ -161,8 +152,7 @@ public:
 
     void setPage(int p) {
         if (p < 0) p = 0;
-        if (p >= TOTAL_PAGES) p = TOTAL_PAGES - 1;
-        m_page = p;
+        if (p >= 6) p = 5;
 
         for (auto n : m_mainNodes) n->setVisible(p == 0);
         for (auto n : m_rageNodes) n->setVisible(p == 1);
@@ -215,40 +205,31 @@ public:
         closeBtn->setPosition({cx + 340, cy + 30});
         menu->addChild(closeBtn);
 
-        // ===== ВКЛАДКИ (все 6, но видны 4) =====
         float tabY[6] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210};
-
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
-        menu->addChild(m_tabMain);
-        m_tabButtons.push_back(m_tabMain);
+        menu->addChild(m_tabMain); m_tabButtons.push_back(m_tabMain);
 
         m_tabRage = CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage"), this, menu_selector(NeverloseMenu::onTabRage));
         m_tabRage->setPosition({cx - 270, tabY[1]});
-        menu->addChild(m_tabRage);
-        m_tabButtons.push_back(m_tabRage);
+        menu->addChild(m_tabRage); m_tabButtons.push_back(m_tabRage);
 
         m_tabVisuals = CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals"), this, menu_selector(NeverloseMenu::onTabVisuals));
         m_tabVisuals->setPosition({cx - 270, tabY[2]});
-        menu->addChild(m_tabVisuals);
-        m_tabButtons.push_back(m_tabVisuals);
+        menu->addChild(m_tabVisuals); m_tabButtons.push_back(m_tabVisuals);
 
         m_tabAntiAim = CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim"), this, menu_selector(NeverloseMenu::onTabAntiAim));
         m_tabAntiAim->setPosition({cx - 270, tabY[3]});
-        menu->addChild(m_tabAntiAim);
-        m_tabButtons.push_back(m_tabAntiAim);
+        menu->addChild(m_tabAntiAim); m_tabButtons.push_back(m_tabAntiAim);
 
         m_tabCreate = CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"), this, menu_selector(NeverloseMenu::onTabCreate));
         m_tabCreate->setPosition({cx - 270, tabY[4]});
-        menu->addChild(m_tabCreate);
-        m_tabButtons.push_back(m_tabCreate);
+        menu->addChild(m_tabCreate); m_tabButtons.push_back(m_tabCreate);
 
         m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
         m_tabLegit->setPosition({cx - 270, tabY[5]});
-        menu->addChild(m_tabLegit);
-        m_tabButtons.push_back(m_tabLegit);
+        menu->addChild(m_tabLegit); m_tabButtons.push_back(m_tabLegit);
 
-        // ===== КНОПКИ СКРОЛЛА ВКЛАДОК =====
         m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
         m_scrollUpBtn->setPosition({cx - 270, cy + 195});
         menu->addChild(m_scrollUpBtn);
@@ -284,47 +265,61 @@ public:
 
         // ANTI-AIM
         m_spinbotBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
-        m_spinbotBtn->setPosition({cx + 60, cy + 140});
+        m_spinbotBtn->setPosition({cx + 60, cy + 160});
         menu->addChild(m_spinbotBtn); m_antiAimNodes.push_back(m_spinbotBtn);
 
         auto spinText = CCLabelBMFont::create("Spinbot Speed:", "bigFont.fnt");
-        spinText->setPosition({cx - 60, cy + 70});
+        spinText->setPosition({cx - 60, cy + 100});
         spinText->setScale(0.5f);
         spinText->setColor({0, 200, 255});
         this->addChild(spinText); m_antiAimNodes.push_back(spinText);
 
         m_spinDown = CCMenuItemSpriteExtra::create(ButtonSprite::create("<"), this, menu_selector(NeverloseMenu::onSpinDown));
-        m_spinDown->setPosition({cx + 30, cy + 70});
+        m_spinDown->setPosition({cx + 30, cy + 100});
         menu->addChild(m_spinDown); m_antiAimNodes.push_back(m_spinDown);
 
         m_spinValueBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("5.00"), this, menu_selector(NeverloseMenu::onSpinValue));
-        m_spinValueBtn->setPosition({cx + 110, cy + 70});
+        m_spinValueBtn->setPosition({cx + 110, cy + 100});
         menu->addChild(m_spinValueBtn); m_antiAimNodes.push_back(m_spinValueBtn);
 
         m_spinUp = CCMenuItemSpriteExtra::create(ButtonSprite::create(">"), this, menu_selector(NeverloseMenu::onSpinUp));
-        m_spinUp->setPosition({cx + 190, cy + 70});
+        m_spinUp->setPosition({cx + 190, cy + 100});
         menu->addChild(m_spinUp); m_antiAimNodes.push_back(m_spinUp);
 
+        // ===== ANTI-AIM (FLIP) =====
+        m_aaEnabledBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim: OFF"), this, menu_selector(NeverloseMenu::onAAEnabled));
+        m_aaEnabledBtn->setPosition({cx + 60, cy + 20});
+        menu->addChild(m_aaEnabledBtn); m_antiAimNodes.push_back(m_aaEnabledBtn);
+
+        m_aaFlipXBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Flip Back: OFF"), this, menu_selector(NeverloseMenu::onAAFlipX));
+        m_aaFlipXBtn->setPosition({cx + 60, cy - 50});
+        menu->addChild(m_aaFlipXBtn); m_antiAimNodes.push_back(m_aaFlipXBtn);
+
+        m_aaFlipYBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Flip Down: OFF"), this, menu_selector(NeverloseMenu::onAAFlipY));
+        m_aaFlipYBtn->setPosition({cx + 60, cy - 120});
+        menu->addChild(m_aaFlipYBtn); m_antiAimNodes.push_back(m_aaFlipYBtn);
+
+        // SPEEDHACK
         m_speedhackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Speedhack: OFF"), this, menu_selector(NeverloseMenu::onSpeedhack));
-        m_speedhackBtn->setPosition({cx + 60, cy});
+        m_speedhackBtn->setPosition({cx + 60, cy - 190});
         menu->addChild(m_speedhackBtn); m_antiAimNodes.push_back(m_speedhackBtn);
 
         auto shText = CCLabelBMFont::create("Speedhack Value:", "bigFont.fnt");
-        shText->setPosition({cx - 60, cy - 70});
+        shText->setPosition({cx - 60, cy - 230});
         shText->setScale(0.5f);
         shText->setColor({0, 200, 255});
         this->addChild(shText); m_antiAimNodes.push_back(shText);
 
         m_shDown = CCMenuItemSpriteExtra::create(ButtonSprite::create("<"), this, menu_selector(NeverloseMenu::onSpeedhackDown));
-        m_shDown->setPosition({cx + 30, cy - 70});
+        m_shDown->setPosition({cx + 30, cy - 230});
         menu->addChild(m_shDown); m_antiAimNodes.push_back(m_shDown);
 
         m_shValueBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("1.000"), this, menu_selector(NeverloseMenu::onSpeedValue));
-        m_shValueBtn->setPosition({cx + 110, cy - 70});
+        m_shValueBtn->setPosition({cx + 110, cy - 230});
         menu->addChild(m_shValueBtn); m_antiAimNodes.push_back(m_shValueBtn);
 
         m_shUp = CCMenuItemSpriteExtra::create(ButtonSprite::create(">"), this, menu_selector(NeverloseMenu::onSpeedhackUp));
-        m_shUp->setPosition({cx + 190, cy - 70});
+        m_shUp->setPosition({cx + 190, cy - 230});
         menu->addChild(m_shUp); m_antiAimNodes.push_back(m_shUp);
 
         // CREATE
@@ -345,19 +340,8 @@ public:
         return true;
     }
 
-    // ===== СКРОЛЛ ВКЛАДОК =====
-    void onScrollUp(CCObject*) {
-        if (m_tabOffset > 0) {
-            m_tabOffset--;
-            updateTabVisibility();
-        }
-    }
-    void onScrollDown(CCObject*) {
-        if (m_tabOffset < (int)m_tabButtons.size() - VISIBLE_TABS) {
-            m_tabOffset++;
-            updateTabVisibility();
-        }
-    }
+    void onScrollUp(CCObject*) { if (m_tabOffset > 0) { m_tabOffset--; updateTabVisibility(); } }
+    void onScrollDown(CCObject*) { if (m_tabOffset < (int)m_tabButtons.size() - VISIBLE_TABS) { m_tabOffset++; updateTabVisibility(); } }
 
     void onTabMain(CCObject*) { setPage(0); }
     void onTabRage(CCObject*) { setPage(1); }
@@ -394,6 +378,12 @@ public:
         auto popup = ValueInputPopup::create(false);
         if (popup) CCDirector::get()->getRunningScene()->addChild(popup, 99999);
     }
+
+    // ===== ANTI-AIM =====
+    void onAAEnabled(CCObject*) { g_aaEnabled = !g_aaEnabled; refreshButtons(); }
+    void onAAFlipX(CCObject*) { g_aaFlipX = !g_aaFlipX; refreshButtons(); }
+    void onAAFlipY(CCObject*) { g_aaFlipY = !g_aaFlipY; refreshButtons(); }
+
     void onSpeedhack(CCObject*) {
         g_speedhack = !g_speedhack;
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
@@ -420,25 +410,4 @@ public:
     void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
 
     void onClose(CCObject*) {
-        this->runAction(CCSequence::create(
-            CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
-            nullptr));
-    }
-    void removeMe() { this->removeFromParentAndCleanup(true); }
-    void keyBackClicked() { onClose(nullptr); }
-};
-
-// ================= PLAYER =================
-class $modify(MyPlayLayer, PlayLayer) {
-    void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        if (g_noclip) return;
-        PlayLayer::destroyPlayer(player, obj);
-    }
-    void update(float dt) {
-        PlayLayer::update(dt);
-        if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
-        if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
-    }
-    void onExit() {
-        CC
+        this->runAction(CCSequen
