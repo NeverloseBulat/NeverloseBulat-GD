@@ -52,7 +52,7 @@ public:
         auto p = CCScale9Sprite::create("GJ_square01.png");
         p->setContentSize({520.f, 260.f}); p->setPosition({cx, cy}); this->addChild(p);
         auto t = CCLabelBMFont::create(m_isSpeed ? "Speedhack Value" : "Spinbot Speed", "goldFont.fnt");
-        t->setPosition({cx, cy + 90.f}); t->setScale(0.7f); t->setColor({0, 200, 255}); this->addChild(t);
+        t->setPosition({cx, cy + 90.f}); t->setScale(0.7f); t->setColor({0,200,255}); this->addChild(t);
         auto v = CCLabelBMFont::create(
             CCString::createWithFormat("%.2f", m_isSpeed ? g_speed : g_spinSpeed)->getCString(),
             "goldFont.fnt");
@@ -385,9 +385,7 @@ class $modify(NLPlayLayer, PlayLayer) {
 
         auto player = m_player1;
         if (player) {
-            if (g_autoJump) player->pushButton(PlayerButton::Jump);
-            if (g_jumpHack) player->m_jumpAccel = 1.5f;
-            else            player->m_jumpAccel = 1.0f;
+            if (g_autoJump || g_jumpHack) player->pushButton(PlayerButton::Jump);
         }
 
         if (g_shake) {
@@ -490,6 +488,9 @@ class $modify(NLLevelInfoLayer, LevelInfoLayer) {
     void onPlay(CCObject* sender) { LevelInfoLayer::onPlay(sender); }
 };
 
+// ============================================================
+//                          ENTRY
+// ============================================================
 $execute {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 }
