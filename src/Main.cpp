@@ -197,7 +197,7 @@ public:
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 340, cy + 30});
+        closeBtn->setPosition({cx + 300, cy + 200});
         menu->addChild(closeBtn);
 
         float tabY[6] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210};
@@ -356,7 +356,7 @@ public:
     }
     void onSpinValue(CCObject*) {
         auto popup = ValueInputPopup::create(false);
-        if (popup) CCDirector::get()->getRunningScene()->addChild(popup, 99999);
+        if (popup) this->addChild(popup, 9999);
     }
     void onAAEnabled(CCObject*) { g_aaEnabled = !g_aaEnabled; refreshButtons(); }
     void onAAFlipX(CCObject*) { g_aaFlipX = !g_aaFlipX; refreshButtons(); }
@@ -381,16 +381,16 @@ public:
     }
     void onSpeedValue(CCObject*) {
         auto popup = ValueInputPopup::create(true);
-        if (popup) CCDirector::get()->getRunningScene()->addChild(popup, 99999);
+        if (popup) this->addChild(popup, 9999);
     }
     void onCopyHack(CCObject*) { g_copyHack = !g_copyHack; refreshButtons(); }
     void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
 
     void onClose(CCObject*) {
-      this->runAction(CCSequence::create(
-        CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-        CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
-        nullptr));
+        this->runAction(CCSequence::create(
+            CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
+         te(this, callfunc_selector(NeverloseMenu::removeMe)),
+            nullptr));
     }
     void removeMe() { this->removeFromParentAndCleanup(true); }
     void keyBackClicked() { onClose(nullptr); }
@@ -460,4 +460,3 @@ class $modify(MyPauseLayer, PauseLayer) {
         if (menu) this->addChild(menu, 200);
     }
 };
-            
