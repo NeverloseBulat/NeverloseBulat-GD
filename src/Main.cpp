@@ -454,7 +454,6 @@ public:
         mn->addChild(m_fpsBtn);
         m_legitNodes.push_back(m_fpsBtn);
 
-        // COSMETICS
         m_unlockIconsBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Icons: OFF"), this, menu_selector(NeverloseMenu::onUnlockIcons));
         m_unlockIconsBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -485,7 +484,6 @@ public:
 
         setPage(0);
         refreshButtons();
-
         this->setScale(0.3f);
         this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)));
         this->setKeypadEnabled(true);
@@ -543,7 +541,6 @@ public:
     void onSpinValue(CCObject*) {
         if (auto p = ValueInputPopup::create(false)) this->addChild(p, 9);
     }
-
     void onSpeedhackUp(CCObject*) {
         g_speed += 1.f; if (g_speed > 500.f) g_speed = 500.f;
         if (g_speedhack && CCDirector::get() && CCDirector::get()->getScheduler())
