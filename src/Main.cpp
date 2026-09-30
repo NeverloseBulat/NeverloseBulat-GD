@@ -26,8 +26,7 @@ static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
 }
 static ButtonSprite* makeNumber(float v) {
     return ButtonSprite::create(
-        CCString::createWithFormat("%.2f", v)->getCString(),
-        "bigFont.fnt", "GJ_button_01.png", 30.f, 0.7f);
+        CCString::createWithFormat("%.2f", v)->getCString());
 }
 
 class ValueInputPopup : public CCLayer {
@@ -302,8 +301,7 @@ public:
 
         auto mkArrow = [&](const char* txt, cocos2d::SEL_MenuHandler cb_, CCPoint pos) {
             auto b = CCMenuItemSpriteExtra::create(
-                ButtonSprite::create(txt, "bigFont.fnt", "GJ_button_01.png", 30.f, 0.7f),
-                this, cb_);
+                ButtonSprite::create(txt), this, cb_);
             b->setPosition(pos);
             b->setScale(0.9f);
             mn->addChild(b);
@@ -422,9 +420,8 @@ public:
             ButtonSprite::create("CPS: OFF"), this, menu_selector(NeverloseMenu::onCPS));
         m_cpsBtn->setPosition({cx + 60.f, cy - 10.f});
         m_cpsBtn->setScale(0.55f);
-                mn->addChild(m_cpsBtn);
+        mn->addChild(m_cpsBtn);
         m_legitNodes.push_back(m_cpsBtn);
-
         m_timeBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Time: OFF"), this, menu_selector(NeverloseMenu::onTime));
         m_timeBtn->setPosition({cx + 60.f, cy - 80.f});
