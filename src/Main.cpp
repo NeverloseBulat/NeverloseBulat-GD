@@ -125,41 +125,17 @@ protected:
     CCMenuItemSpriteExtra *m_speedhackBtn, *m_shDown, *m_shUp, *m_shValueBtn;
 
     CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate, *m_tabLegit;
+    CCMenuItemSpriteExtra *m_prevBtn, *m_nextBtn;
+    CCLabelBMFont* m_pageLabel = nullptr;
 
-    CCPoint m_swipeStart;
     int m_page = 0;
+    const int TOTAL_PAGES = 6;
 
 public:
     static NeverloseMenu* create() {
         auto r = new NeverloseMenu();
         if (r && r->init()) { r->autorelease(); return r; }
         delete r; return nullptr;
-    }
-
-    // ================== SWIPE ==================
-    void registerWithTouchDispatcher() {
-        cocos2d::CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(this, 0, false);
-    }
-
-    bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
-        m_swipeStart = touch->getLocation();
-        return true;
-    }
-
-    void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
-        auto end = touch->getLocation();
-        float dx = end.x - m_swipeStart.x;
-        float dy = end.y - m_swipeStart.y;
-        // Свайп по горизонтали (не по вертикали)
-        if (std::abs(dx) > 80 && std::abs(dx) > std::abs(dy)) {
-            if (dx < 0) {
-                // свайп влево -> следующая страница
-                if (m_page < 5) setPage(m_page + 1);
-            } else {
-                // свайп вправо -> предыдущая
-                if (m_page > 0) setPage(m_page - 1);
-            }
-        }
     }
 
     void refreshButtons() {
@@ -176,27 +152,33 @@ public:
     }
 
     void setPage(int p) {
+        if (p < 0) p = 0;
+        if (p >= TOTAL_PAGES) p = TOTAL_PAGES - 1;
         m_page = p;
+
         for (auto n : m_mainNodes) n->setVisible(p == 0);
         for (auto n : m_rageNodes) n->setVisible(p == 1);
         for (auto n : m_visualsNodes) n->setVisible(p == 2);
         for (auto n : m_antiAimNodes) n->setVisible(p == 3);
         for (auto n : m_createNodes) n->setVisible(p == 4);
         for (auto n : m_legitNodes) n->setVisible(p == 5);
+
         m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
         m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
         m_tabAntiAim->setColor(p == 3 ? ccWHITE : ccGRAY);
         m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
         m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
+
+        if (m_pageLabel) {
+            m_pageLabel->setString(CCString::createWithFormat("%d / %d", p + 1, TOTAL_PAGES)->getCString());
+        }
     }
 
     bool init() {
         if (!CCLayer::init()) return false;
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2, cy = ws.height / 2;
-
-        this->setTouchEnabled(true);
 
         auto overlay = CCLayerColor::create({0, 0, 0, 180});
         this->addChild(overlay, -1);
@@ -223,14 +205,13 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // Крестик — чуть вверх и вправо
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         closeBtn->setPosition({cx + 340, cy + 30});
         menu->addChild(closeBtn);
 
-        // Tabs (6 штук)
+        // Tabs
         float tabY[6] = {cy + 180, cy + 110, cy + 40, cy - 30, cy - 100, cy - 170};
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
@@ -255,6 +236,21 @@ public:
         m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
         m_tabLegit->setPosition({cx - 270, tabY[5]});
         menu->addChild(m_tabLegit);
+
+        // ===== ЛИСТАНИЕ (◀ ▶ + 1/6) =====
+        m_prevBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("<"), this, menu_selector(NeverloseMenu::onPrevPage));
+        m_prevBtn->setPosition({cx - 350, cy + 225});
+        menu->addChild(m_prevBtn);
+
+        m_nextBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create(">"), this, menu_selector(NeverloseMenu::onNextPage));
+        m_nextBtn->setPosition({cx - 190, cy + 225});
+        menu->addChild(m_nextBtn);
+
+        m_pageLabel = CCLabelBMFont::create("1 / 6", "bigFont.fnt");
+        m_pageLabel->setPosition({cx - 270, cy + 225});
+        m_pageLabel->setScale(0.55f);
+        m_pageLabel->setColor({0, 200, 255});
+        this->addChild(m_pageLabel);
 
         // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
@@ -346,6 +342,10 @@ public:
         return true;
     }
 
+    // ===== ЛИСТАНИЕ =====
+    void onPrevPage(CCObject*) { setPage(m_page - 1); }
+    void onNextPage(CCObject*) { setPage(m_page + 1); }
+
     void onTabMain(CCObject*) { setPage(0); }
     void onTabRage(CCObject*) { setPage(1); }
     void onTabVisuals(CCObject*) { setPage(2); }
@@ -428,7 +428,4 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
         if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
         if (g_autoClicker && m_player1) {
-            g_clickTimer++;
-            // Быстрый цикл: push -> hold -> release -> hold
-            if (g_clickTimer % 4 == 0) {
-                m_player1->pushButton(PlayerButton
+            g_clic
