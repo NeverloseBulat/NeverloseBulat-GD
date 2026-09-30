@@ -124,9 +124,8 @@ protected:
     CCMenuItemSpriteExtra *m_speedhackBtn, *m_shDown, *m_shUp, *m_shValueBtn;
     CCMenuItemSpriteExtra *m_aaEnabledBtn, *m_aaFlipXBtn, *m_aaFlipYBtn;
     CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate, *m_tabLegit, *m_tabCosmetics;
-    CCMenuItemSpriteExtra *m_scrollUpBtn, *m_scrollDownBtn;
     int m_tabOffset = 0;
-    const int VISIBLE_TABS = 4;
+    const int VISIBLE_TABS = 7;
 public:
     static NeverloseMenu* create() {
         auto r = new NeverloseMenu();
@@ -206,35 +205,36 @@ public:
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 340, cy - 220});
+        closeBtn->setPosition({cx + 300, cy - 200});
         menu->addChild(closeBtn);
-        m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
-        m_scrollUpBtn->setPosition({cx - 270, cy + 195});
-        menu->addChild(m_scrollUpBtn);
-        m_scrollDownBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("v"), this, menu_selector(NeverloseMenu::onScrollDown));
-        m_scrollDownBtn->setPosition({cx - 270, cy - 195});
-        menu->addChild(m_scrollDownBtn);
-        float tabY[7] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210, cy - 280};
+        float tabY[7] = {cy + 170, cy + 115, cy + 60, cy + 5, cy - 50, cy - 105, cy - 160};
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
+        m_tabMain->setScale(0.7f);
         menu->addChild(m_tabMain); m_tabButtons.push_back(m_tabMain);
         m_tabRage = CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage"), this, menu_selector(NeverloseMenu::onTabRage));
         m_tabRage->setPosition({cx - 270, tabY[1]});
+        m_tabRage->setScale(0.7f);
         menu->addChild(m_tabRage); m_tabButtons.push_back(m_tabRage);
         m_tabVisuals = CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals"), this, menu_selector(NeverloseMenu::onTabVisuals));
         m_tabVisuals->setPosition({cx - 270, tabY[2]});
+        m_tabVisuals->setScale(0.7f);
         menu->addChild(m_tabVisuals); m_tabButtons.push_back(m_tabVisuals);
         m_tabAntiAim = CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim"), this, menu_selector(NeverloseMenu::onTabAntiAim));
         m_tabAntiAim->setPosition({cx - 270, tabY[3]});
+        m_tabAntiAim->setScale(0.7f);
         menu->addChild(m_tabAntiAim); m_tabButtons.push_back(m_tabAntiAim);
         m_tabCreate = CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"), this, menu_selector(NeverloseMenu::onTabCreate));
         m_tabCreate->setPosition({cx - 270, tabY[4]});
+        m_tabCreate->setScale(0.7f);
         menu->addChild(m_tabCreate); m_tabButtons.push_back(m_tabCreate);
         m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
         m_tabLegit->setPosition({cx - 270, tabY[5]});
+        m_tabLegit->setScale(0.7f);
         menu->addChild(m_tabLegit); m_tabButtons.push_back(m_tabLegit);
         m_tabCosmetics = CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics"), this, menu_selector(NeverloseMenu::onTabCosmetics));
         m_tabCosmetics->setPosition({cx - 270, tabY[6]});
+        m_tabCosmetics->setScale(0.7f);
         menu->addChild(m_tabCosmetics); m_tabButtons.push_back(m_tabCosmetics);
         updateTabVisibility();
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
@@ -332,8 +332,6 @@ public:
         this->setKeypadEnabled(true);
         return true;
     }
-    void onScrollUp(CCObject*) { if (m_tabOffset > 0) { m_tabOffset--; updateTabVisibility(); } }
-    void onScrollDown(CCObject*) { if (m_tabOffset < (int)m_tabButtons.size() - VISIBLE_TABS) { m_tabOffset++; updateTabVisibility(); } }
     void onTabMain(CCObject*) { setPage(0); }
     void onTabRage(CCObject*) { setPage(1); }
     void onTabVisuals(CCObject*) { setPage(2); }
@@ -541,7 +539,7 @@ class $modify(MyPauseLayer, PauseLayer) {
         menu->addChild(btn);
         menu->setPosition({0, 0});
         this->addChild(menu, 100);
-    };
+    }
     void onNeverlose(CCObject*) {
         auto menu = NeverloseMenu::create();
         if (menu) this->addChild(menu, 200);
