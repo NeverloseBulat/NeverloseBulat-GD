@@ -15,12 +15,10 @@ static bool g_ldm = false;
 static bool g_autoLDM = false;
 static bool g_speedhack = false;
 static bool g_jumpHack = false;
-static bool g_autoClicker = false;
 static bool g_copyHack = false;
 static bool g_autoSafeMode = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
-static int g_clickTimer = 0;
 
 static CCLabelBMFont* g_speedLabel = nullptr;
 static CCLabelBMFont* g_spinLabel = nullptr;
@@ -114,8 +112,10 @@ class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes;
 
+    // Tabs (могут скроллиться)
+    std::vector<CCMenuItemSpriteExtra*> m_tabButtons;
+
     CCMenuItemSpriteExtra *m_jumpHackBtn = nullptr;
-    CCMenuItemSpriteExtra *m_autoClickerBtn = nullptr;
     CCMenuItemSpriteExtra *m_copyHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoSafeModeBtn = nullptr;
 
@@ -125,11 +125,12 @@ protected:
     CCMenuItemSpriteExtra *m_speedhackBtn, *m_shDown, *m_shUp, *m_shValueBtn;
 
     CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate, *m_tabLegit;
-    CCMenuItemSpriteExtra *m_prevBtn, *m_nextBtn;
-    CCLabelBMFont* m_pageLabel = nullptr;
+    CCMenuItemSpriteExtra *m_scrollUpBtn, *m_scrollDownBtn;
 
+    int m_tabOffset = 0; // смещение скролла вкладок
     int m_page = 0;
     const int TOTAL_PAGES = 6;
+    const int VISIBLE_TABS = 4; // сколько вкладок видно одновременно
 
 public:
     static NeverloseMenu* create() {
@@ -140,7 +141,6 @@ public:
 
     void refreshButtons() {
         m_jumpHackBtn->setNormalImage(ButtonSprite::create(g_jumpHack ? "Jump Hack: ON" : "Jump Hack: OFF"));
-        m_autoClickerBtn->setNormalImage(ButtonSprite::create(g_autoClicker ? "Auto Clicker: ON" : "Auto Clicker: OFF"));
         m_noclipBtn->setNormalImage(ButtonSprite::create(g_noclip ? "Noclip: ON" : "Noclip: OFF"));
         m_autoJumpBtn->setNormalImage(ButtonSprite::create(g_autoJump ? "AutoJump: ON" : "AutoJump: OFF"));
         m_ldmBtn->setNormalImage(ButtonSprite::create(g_ldm ? "LDM: ON" : "LDM: OFF"));
@@ -149,6 +149,14 @@ public:
         m_speedhackBtn->setNormalImage(ButtonSprite::create(g_speedhack ? "Speedhack: ON" : "Speedhack: OFF"));
         m_copyHackBtn->setNormalImage(ButtonSprite::create(g_copyHack ? "Copy Hack: ON" : "Copy Hack: OFF"));
         m_autoSafeModeBtn->setNormalImage(ButtonSprite::create(g_autoSafeMode ? "Auto Safe Mode: ON" : "Auto Safe Mode: OFF"));
+    }
+
+    // Обновить видимость вкладок в зависимости от скролла
+    void updateTabVisibility() {
+        for (int i = 0; i < (int)m_tabButtons.size(); i++) {
+            bool visible = (i >= m_tabOffset && i < m_tabOffset + VISIBLE_TABS);
+            m_tabButtons[i]->setVisible(visible);
+        }
     }
 
     void setPage(int p) {
@@ -169,10 +177,6 @@ public:
         m_tabAntiAim->setColor(p == 3 ? ccWHITE : ccGRAY);
         m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
         m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
-
-        if (m_pageLabel) {
-            m_pageLabel->setString(CCString::createWithFormat("%d / %d", p + 1, TOTAL_PAGES)->getCString());
-        }
     }
 
     bool init() {
@@ -211,55 +215,54 @@ public:
         closeBtn->setPosition({cx + 340, cy + 30});
         menu->addChild(closeBtn);
 
-        // Tabs
-        float tabY[6] = {cy + 180, cy + 110, cy + 40, cy - 30, cy - 100, cy - 170};
+        // ===== ВКЛАДКИ (все 6, но видны 4) =====
+        float tabY[6] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210};
+
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
         menu->addChild(m_tabMain);
+        m_tabButtons.push_back(m_tabMain);
 
         m_tabRage = CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage"), this, menu_selector(NeverloseMenu::onTabRage));
         m_tabRage->setPosition({cx - 270, tabY[1]});
         menu->addChild(m_tabRage);
+        m_tabButtons.push_back(m_tabRage);
 
         m_tabVisuals = CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals"), this, menu_selector(NeverloseMenu::onTabVisuals));
         m_tabVisuals->setPosition({cx - 270, tabY[2]});
         menu->addChild(m_tabVisuals);
+        m_tabButtons.push_back(m_tabVisuals);
 
         m_tabAntiAim = CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim"), this, menu_selector(NeverloseMenu::onTabAntiAim));
         m_tabAntiAim->setPosition({cx - 270, tabY[3]});
         menu->addChild(m_tabAntiAim);
+        m_tabButtons.push_back(m_tabAntiAim);
 
         m_tabCreate = CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"), this, menu_selector(NeverloseMenu::onTabCreate));
         m_tabCreate->setPosition({cx - 270, tabY[4]});
         menu->addChild(m_tabCreate);
+        m_tabButtons.push_back(m_tabCreate);
 
         m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
         m_tabLegit->setPosition({cx - 270, tabY[5]});
         menu->addChild(m_tabLegit);
+        m_tabButtons.push_back(m_tabLegit);
 
-        // ===== ЛИСТАНИЕ (◀ ▶ + 1/6) =====
-        m_prevBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("<"), this, menu_selector(NeverloseMenu::onPrevPage));
-        m_prevBtn->setPosition({cx - 350, cy + 225});
-        menu->addChild(m_prevBtn);
+        // ===== КНОПКИ СКРОЛЛА ВКЛАДОК =====
+        m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
+        m_scrollUpBtn->setPosition({cx - 270, cy + 195});
+        menu->addChild(m_scrollUpBtn);
 
-        m_nextBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create(">"), this, menu_selector(NeverloseMenu::onNextPage));
-        m_nextBtn->setPosition({cx - 190, cy + 225});
-        menu->addChild(m_nextBtn);
+        m_scrollDownBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("v"), this, menu_selector(NeverloseMenu::onScrollDown));
+        m_scrollDownBtn->setPosition({cx - 270, cy - 195});
+        menu->addChild(m_scrollDownBtn);
 
-        m_pageLabel = CCLabelBMFont::create("1 / 6", "bigFont.fnt");
-        m_pageLabel->setPosition({cx - 270, cy + 225});
-        m_pageLabel->setScale(0.55f);
-        m_pageLabel->setColor({0, 200, 255});
-        this->addChild(m_pageLabel);
+        updateTabVisibility();
 
         // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60, cy + 130});
         menu->addChild(m_jumpHackBtn); m_mainNodes.push_back(m_jumpHackBtn);
-
-        m_autoClickerBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Auto Clicker: OFF"), this, menu_selector(NeverloseMenu::onAutoClicker));
-        m_autoClickerBtn->setPosition({cx + 60, cy + 60});
-        menu->addChild(m_autoClickerBtn); m_mainNodes.push_back(m_autoClickerBtn);
 
         // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
@@ -342,9 +345,19 @@ public:
         return true;
     }
 
-    // ===== ЛИСТАНИЕ =====
-    void onPrevPage(CCObject*) { setPage(m_page - 1); }
-    void onNextPage(CCObject*) { setPage(m_page + 1); }
+    // ===== СКРОЛЛ ВКЛАДОК =====
+    void onScrollUp(CCObject*) {
+        if (m_tabOffset > 0) {
+            m_tabOffset--;
+            updateTabVisibility();
+        }
+    }
+    void onScrollDown(CCObject*) {
+        if (m_tabOffset < (int)m_tabButtons.size() - VISIBLE_TABS) {
+            m_tabOffset++;
+            updateTabVisibility();
+        }
+    }
 
     void onTabMain(CCObject*) { setPage(0); }
     void onTabRage(CCObject*) { setPage(1); }
@@ -354,7 +367,6 @@ public:
     void onTabLegit(CCObject*) { setPage(5); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
-    void onAutoClicker(CCObject*) { g_autoClicker = !g_autoClicker; g_clickTimer = 0; refreshButtons(); }
     void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*) {
@@ -427,5 +439,6 @@ class $modify(MyPlayLayer, PlayLayer) {
         PlayLayer::update(dt);
         if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
         if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
-        if (g_autoClicker && m_player1) {
-            g_clic
+    }
+    void onExit() {
+        CC
