@@ -10,13 +10,15 @@
 
 using namespace geode::prelude;
 
-static bool g_noclip=false, g_autoJump=false, g_spinbot=false, g_shake=false,
+static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
             g_jumpHack=false, g_copyHack=false, g_autoSafeMode=false,
             g_aaEnabled=false, g_aaFlipX=false, g_aaFlipY=false,
             g_cheatIndicator=false, g_showCPS=false, g_showTime=false,
             g_showFPS=false, g_unlockIcons=false, g_unlockVault=false,
-            g_unlockColors=false, g_unlockLevels=false;
+            g_unlockColors=false, g_unlockLevels=false,
+            g_showPercent=false, g_hidePlayer=false, g_slowMo=false,
+            g_fastMo=false, g_practiceMusic=false, g_noDeathEffect=false;
 
 static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
              g_spinPhase = 0.0f, g_gravTimer = 0.0f;
@@ -96,20 +98,22 @@ public:
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
-                         m_createNodes, m_legitNodes, m_cosmeticsNodes;
+                         m_createNodes, m_legitNodes, m_cosmeticsNodes, m_qolNodes;
     CCMenuItemSpriteExtra *m_jumpHackBtn=nullptr, *m_copyHackBtn=nullptr,
         *m_autoSafeModeBtn=nullptr, *m_cheatIndBtn=nullptr, *m_cpsBtn=nullptr,
         *m_timeBtn=nullptr, *m_fpsBtn=nullptr, *m_unlockIconsBtn=nullptr,
         *m_unlockVaultBtn=nullptr, *m_unlockColorsBtn=nullptr, *m_unlockLevelsBtn=nullptr,
-        *m_noclipBtn=nullptr, *m_autoJumpBtn=nullptr, *m_ldmBtn=nullptr,
+        *m_noclipBtn=nullptr, *m_ldmBtn=nullptr,
         *m_autoLDMBtn=nullptr, *m_spinbotBtn=nullptr, *m_shakeBtn=nullptr,
         *m_nlGraviteBtn=nullptr, *m_spinDown=nullptr, *m_spinUp=nullptr,
         *m_spinValueBtn=nullptr, *m_speedhackBtn=nullptr, *m_shDown=nullptr,
         *m_shUp=nullptr, *m_shValueBtn=nullptr, *m_aaEnabledBtn=nullptr,
         *m_aaFlipXBtn=nullptr, *m_aaFlipYBtn=nullptr,
+        *m_showPercentBtn=nullptr, *m_hidePlayerBtn=nullptr, *m_slowMoBtn=nullptr,
+        *m_fastMoBtn=nullptr, *m_practiceMusicBtn=nullptr, *m_noDeathEffectBtn=nullptr,
         *m_tabMain=nullptr, *m_tabRage=nullptr, *m_tabVisuals=nullptr,
         *m_tabAntiAim=nullptr, *m_tabCreate=nullptr, *m_tabLegit=nullptr,
-        *m_tabCosmetics=nullptr;
+        *m_tabCosmetics=nullptr, *m_tabQOL=nullptr;
 
     CCScale9Sprite* m_mainPanel = nullptr;
     CCScale9Sprite* m_sidePanel = nullptr;
@@ -130,7 +134,6 @@ public:
     void refreshButtons() {
         if (m_jumpHackBtn)     m_jumpHackBtn->setNormalImage(makeToggle("Jump Hack: ON","Jump Hack: OFF", g_jumpHack));
         if (m_noclipBtn)       m_noclipBtn->setNormalImage(makeToggle("Noclip: ON","Noclip: OFF", g_noclip));
-        if (m_autoJumpBtn)     m_autoJumpBtn->setNormalImage(makeToggle("AutoJump: ON","AutoJump: OFF", g_autoJump));
         if (m_ldmBtn)          m_ldmBtn->setNormalImage(makeToggle("LDM: ON","LDM: OFF", g_ldm));
         if (m_autoLDMBtn)      m_autoLDMBtn->setNormalImage(makeToggle("Auto LDM: ON","Auto LDM: OFF", g_autoLDM));
         if (m_spinbotBtn)      m_spinbotBtn->setNormalImage(makeToggle("Spinbot: ON","Spinbot: OFF", g_spinbot));
@@ -150,12 +153,18 @@ public:
         if (m_unlockVaultBtn)  m_unlockVaultBtn->setNormalImage(makeToggle("Vault: ON","Vault: OFF", g_unlockVault));
         if (m_unlockColorsBtn) m_unlockColorsBtn->setNormalImage(makeToggle("Colors: ON","Colors: OFF", g_unlockColors));
         if (m_unlockLevelsBtn) m_unlockLevelsBtn->setNormalImage(makeToggle("Levels: ON","Levels: OFF", g_unlockLevels));
+        if (m_showPercentBtn)  m_showPercentBtn->setNormalImage(makeToggle("Show %: ON","Show %: OFF", g_showPercent));
+        if (m_hidePlayerBtn)   m_hidePlayerBtn->setNormalImage(makeToggle("Hide Player: ON","Hide Player: OFF", g_hidePlayer));
+        if (m_slowMoBtn)       m_slowMoBtn->setNormalImage(makeToggle("Slow Motion: ON","Slow Motion: OFF", g_slowMo));
+        if (m_fastMoBtn)       m_fastMoBtn->setNormalImage(makeToggle("Fast Motion: ON","Fast Motion: OFF", g_fastMo));
+        if (m_practiceMusicBtn)m_practiceMusicBtn->setNormalImage(makeToggle("Practice Music: ON","Practice Music: OFF", g_practiceMusic));
+        if (m_noDeathEffectBtn)m_noDeathEffectBtn->setNormalImage(makeToggle("No Death FX: ON","No Death FX: OFF", g_noDeathEffect));
         if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
         if (m_shValueBtn)   m_shValueBtn->setNormalImage(makeNumber(g_speed));
     }
 
     void setPage(int p) {
-        if (p < 0) p = 0; if (p > 6) p = 6;
+        if (p < 0) p = 0; if (p > 7) p = 7;
 
         if (p != m_curPage && m_mainPanel) {
             m_mainPanel->stopAllActions();
@@ -173,6 +182,7 @@ public:
         for (auto n : m_createNodes)    if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)     if (n) n->setVisible(p == 5);
         for (auto n : m_cosmeticsNodes) if (n) n->setVisible(p == 6);
+        for (auto n : m_qolNodes)       if (n) n->setVisible(p == 7);
 
         if (m_tabMain)      m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         if (m_tabRage)      m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
@@ -181,6 +191,7 @@ public:
         if (m_tabCreate)    m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
         if (m_tabLegit)     m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
         if (m_tabCosmetics) m_tabCosmetics->setColor(p == 6 ? ccWHITE : ccGRAY);
+        if (m_tabQOL)       m_tabQOL->setColor(p == 7 ? ccWHITE : ccGRAY);
     }
 
     bool init() override {
@@ -198,17 +209,18 @@ public:
         m_sidePanel->setColor({25,25,30}); this->addChild(m_sidePanel);
 
         auto lg = CCLabelBMFont::create("NEVERLOSE", "goldFont.fnt");
-        lg->setPosition({cx - 270.f, cy + 215.f}); lg->setScale(0.65f); this->addChild(lg);
+        lg->setPosition({cx - 270.f, cy + 225.f}); lg->setScale(0.6f); this->addChild(lg);
         auto mn = CCMenu::create(); mn->setPosition({0,0}); this->addChild(mn);
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         if (cs) cs->setScale(1.2f);
         auto cb = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         cb->setPosition({cx + 360.f, cy + 235.f}); mn->addChild(cb);
 
-        float ty[7] = {cy + 105.f, cy + 70.f, cy + 35.f, cy, cy - 35.f, cy - 70.f, cy - 105.f};
+        float ty[8] = {cy + 130.f, cy + 95.f, cy + 60.f, cy + 25.f,
+                        cy - 10.f, cy - 45.f, cy - 80.f, cy - 115.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
             auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb_);
-            b->setPosition({cx - 270.f, y}); b->setScale(0.5f); mn->addChild(b); return b;
+            b->setPosition({cx - 270.f, y}); b->setScale(0.45f); mn->addChild(b); return b;
         };
         m_tabMain      = mkTab("Main",      menu_selector(NeverloseMenu::onTabMain),      ty[0]);
         m_tabRage      = mkTab("Rage",      menu_selector(NeverloseMenu::onTabRage),      ty[1]);
@@ -217,6 +229,7 @@ public:
         m_tabCreate    = mkTab("Create",    menu_selector(NeverloseMenu::onTabCreate),    ty[4]);
         m_tabLegit     = mkTab("Legit",     menu_selector(NeverloseMenu::onTabLegit),     ty[5]);
         m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
+        m_tabQOL       = mkTab("QOL",       menu_selector(NeverloseMenu::onTabQOL),       ty[7]);
 
         auto addBtn = [&](CCMenuItemSpriteExtra*& btn, const char* txt, cocos2d::SEL_MenuHandler cb, CCPoint pos, float sc, std::vector<CCNode*>& vec) {
             btn = CCMenuItemSpriteExtra::create(ButtonSprite::create(txt), this, cb);
@@ -225,7 +238,6 @@ public:
 
         addBtn(m_jumpHackBtn, "Jump Hack: OFF", menu_selector(NeverloseMenu::onJumpHack), {cx + 60.f, cy + 130.f}, 0.55f, m_mainNodes);
         addBtn(m_noclipBtn,   "Noclip: OFF",    menu_selector(NeverloseMenu::onNoclip),   {cx + 60.f, cy + 130.f}, 0.55f, m_rageNodes);
-        addBtn(m_autoJumpBtn, "AutoJump: OFF",  menu_selector(NeverloseMenu::onAutoJump), {cx + 60.f, cy + 60.f},  0.55f, m_rageNodes);
         addBtn(m_ldmBtn,      "LDM: OFF",       menu_selector(NeverloseMenu::onLDM),      {cx + 60.f, cy + 90.f},  0.55f, m_visualsNodes);
         addBtn(m_autoLDMBtn,  "Auto LDM: OFF",  menu_selector(NeverloseMenu::onAutoLDM),  {cx + 60.f, cy + 25.f},  0.55f, m_visualsNodes);
 
@@ -272,6 +284,13 @@ public:
         addBtn(m_unlockColorsBtn, "Colors: OFF", menu_selector(NeverloseMenu::onUnlockColors), {cx + 60.f, cy - 10.f},  0.55f, m_cosmeticsNodes);
         addBtn(m_unlockLevelsBtn, "Levels: OFF", menu_selector(NeverloseMenu::onUnlockLevels), {cx + 60.f, cy - 80.f},  0.55f, m_cosmeticsNodes);
 
+        addBtn(m_showPercentBtn, "Show %: OFF",         menu_selector(NeverloseMenu::onShowPercent),    {cx + 60.f, cy + 150.f}, 0.55f, m_qolNodes);
+        addBtn(m_hidePlayerBtn,  "Hide Player: OFF",    menu_selector(NeverloseMenu::onHidePlayer),     {cx + 60.f, cy + 85.f},  0.55f, m_qolNodes);
+        addBtn(m_slowMoBtn,      "Slow Motion: OFF",    menu_selector(NeverloseMenu::onSlowMo),         {cx + 60.f, cy + 20.f},  0.55f, m_qolNodes);
+        addBtn(m_fastMoBtn,      "Fast Motion: OFF",    menu_selector(NeverloseMenu::onFastMo),         {cx + 60.f, cy - 45.f},  0.55f, m_qolNodes);
+                addBtn(m_practiceMusicBtn,"Practice Music: OFF",menu_selector(NeverloseMenu::onPracticeMusic), {cx + 60.f, cy - 110.f}, 0.55f, m_qolNodes);
+        addBtn(m_noDeathEffectBtn,"No Death FX: OFF",   menu_selector(NeverloseMenu::onNoDeathEffect),  {cx + 60.f, cy - 175.f}, 0.55f, m_qolNodes);
+
         setPage(0);
         refreshButtons();
 
@@ -305,15 +324,21 @@ public:
     void onTabCreate(CCObject*)    { setPage(4); }
     void onTabLegit(CCObject*)     { setPage(5); }
     void onTabCosmetics(CCObject*) { setPage(6); }
+    void onTabQOL(CCObject*)       { setPage(7); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)   { g_noclip   = !g_noclip;   refreshButtons(); }
-    void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
     void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
-        void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
+    void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
     void onNLGravite(CCObject*){ g_nlGravite = !g_nlGravite; g_gravTimer = 0.f; refreshButtons(); }
+    void onShowPercent(CCObject*)   { g_showPercent    = !g_showPercent;    refreshButtons(); }
+    void onHidePlayer(CCObject*)    { g_hidePlayer     = !g_hidePlayer;     refreshButtons(); }
+    void onSlowMo(CCObject*)        { g_slowMo = !g_slowMo; if (g_slowMo) g_fastMo = false; refreshButtons(); }
+    void onFastMo(CCObject*)        { g_fastMo = !g_fastMo; if (g_fastMo) g_slowMo = false; refreshButtons(); }
+    void onPracticeMusic(CCObject*) { g_practiceMusic  = !g_practiceMusic;  refreshButtons(); }
+    void onNoDeathEffect(CCObject*) { g_noDeathEffect  = !g_noDeathEffect;  refreshButtons(); }
 
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.f; if (g_spinSpeed > 500.f) g_spinSpeed = 500.f;
@@ -373,10 +398,11 @@ public:
 // ============================================================
 class $modify(NLPlayLayer, PlayLayer) {
     struct Fields {
-        CCLabelBMFont* cpsLabel   = nullptr;
-        CCLabelBMFont* timeLabel  = nullptr;
-        CCLabelBMFont* fpsLabel   = nullptr;
-        CCLabelBMFont* cheatLabel = nullptr;
+        CCLabelBMFont* cpsLabel    = nullptr;
+        CCLabelBMFont* timeLabel   = nullptr;
+        CCLabelBMFont* fpsLabel    = nullptr;
+        CCLabelBMFont* cheatLabel  = nullptr;
+        CCLabelBMFont* percentLabel= nullptr;
         float timeAlive  = 0.0f;
         int   frameCount = 0;
         float fpsTimer   = 0.0f;
@@ -404,6 +430,10 @@ class $modify(NLPlayLayer, PlayLayer) {
             f->cheatLabel = CCLabelBMFont::create("[NL.exe]", "bigFont.fnt");
             if (f->cheatLabel) { f->cheatLabel->setScale(0.5f); f->cheatLabel->setPosition({ws.width - 60.f, ws.height - 20.f}); f->cheatLabel->setColor({255,50,50}); this->addChild(f->cheatLabel, 100); }
         }
+        if (g_showPercent) {
+            f->percentLabel = CCLabelBMFont::create("0%", "bigFont.fnt");
+            if (f->percentLabel) { f->percentLabel->setScale(0.5f); f->percentLabel->setPosition({ws.width - 60.f, ws.height - 60.f}); f->percentLabel->setColor({255,255,0}); this->addChild(f->percentLabel, 100); }
+        }
         return true;
     }
 
@@ -414,7 +444,11 @@ class $modify(NLPlayLayer, PlayLayer) {
 
         auto player = m_player1;
         if (player) {
-            if (g_autoJump || g_jumpHack) player->pushButton(PlayerButton::Jump);
+            if (g_jumpHack) player->pushButton(PlayerButton::Jump);
+
+            if (g_hidePlayer) player->setVisible(false);
+            else              player->setVisible(true);
+
             if (g_shake) {
                 g_shakeTimer += dt;
                 if (g_shakeTimer >= 0.08f) {
@@ -431,6 +465,19 @@ class $modify(NLPlayLayer, PlayLayer) {
                     player->flipGravity(g_gravState, true);
                 }
             }
+        }
+
+        if (CCDirector::get() && CCDirector::get()->getScheduler()) {
+            if (g_slowMo)          CCDirector::get()->getScheduler()->setTimeScale(0.5f);
+            else if (g_fastMo)     CCDirector::get()->getScheduler()->setTimeScale(2.0f);
+            else if (!g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(1.0f);
+        }
+
+        if (f->percentLabel && player) {
+            float pct = player->getPositionX() / 10.0f;
+            if (pct > 100.f) pct = 100.f;
+            if (pct < 0.f)   pct = 0.f;
+            f->percentLabel->setString(CCString::createWithFormat("%.0f%%", pct)->getCString());
         }
 
         f->timeAlive += dt; f->frameCount++; f->fpsTimer += dt;
@@ -455,7 +502,7 @@ class $modify(NLPlayLayer, PlayLayer) {
     }
 
     void onQuit() {
-        if (g_speedhack && CCDirector::get() && CCDirector::get()->getScheduler())
+        if (CCDirector::get() && CCDirector::get()->getScheduler())
             CCDirector::get()->getScheduler()->setTimeScale(1.0f);
         PlayLayer::onQuit();
     }
