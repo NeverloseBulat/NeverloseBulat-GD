@@ -101,13 +101,13 @@ public:
         auto cs=CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");cs->setScale(0.8f);
         auto cb=CCMenuItemSpriteExtra::create(cs,this,menu_selector(NeverloseMenu::onClose));cb->setPosition({cx+300,cy-200});mn->addChild(cb);
         float ty[7]={cy+105,cy+70,cy+35,cy,cy-35,cy-70,cy-105};
-        m_tabMain=CCMenuItemSpriteExtra::create(ButtonSprite::create("Main",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabMain));m_tabMain->setPosition({cx-270,ty[0]});m_tabMain->setScale(0.55f);mn->addChild(m_tabMain);
-        m_tabRage=CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabRage));m_tabRage->setPosition({cx-270,ty[1]});m_tabRage->setScale(0.55f);mn->addChild(m_tabRage);
-        m_tabVisuals=CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabVisuals));m_tabVisuals->setPosition({cx-270,ty[2]});m_tabVisuals->setScale(0.55f);mn->addChild(m_tabVisuals);
-        m_tabAntiAim=CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabAntiAim));m_tabAntiAim->setPosition({cx-270,ty[3]});m_tabAntiAim->setScale(0.55f);mn->addChild(m_tabAntiAim);
-        m_tabCreate=CCMenuItemSpriteExtra::create(ButtonSprite::create("Create",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabCreate));m_tabCreate->setPosition({cx-270,ty[4]});m_tabCreate->setScale(0.55f);mn->addChild(m_tabCreate);
-        m_tabLegit=CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabLegit));m_tabLegit->setPosition({cx-270,ty[5]});m_tabLegit->setScale(0.55f);mn->addChild(m_tabLegit);
-        m_tabCosmetics=CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabCosmetics));m_tabCosmetics->setPosition({cx-270,ty[6]});m_tabCosmetics->setScale(0.55f);mn->addChild(m_tabCosmetics);
+        m_tabMain=CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"),this,menu_selector(NeverloseMenu::onTabMain));m_tabMain->setPosition({cx-270,ty[0]});m_tabMain->setScale(0.55f);mn->addChild(m_tabMain);
+        m_tabRage=CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage"),this,menu_selector(NeverloseMenu::onTabRage));m_tabRage->setPosition({cx-270,ty[1]});m_tabRage->setScale(0.55f);mn->addChild(m_tabRage);
+        m_tabVisuals=CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals"),this,menu_selector(NeverloseMenu::onTabVisuals));m_tabVisuals->setPosition({cx-270,ty[2]});m_tabVisuals->setScale(0.55f);mn->addChild(m_tabVisuals);
+        m_tabAntiAim=CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim"),this,menu_selector(NeverloseMenu::onTabAntiAim));m_tabAntiAim->setPosition({cx-270,ty[3]});m_tabAntiAim->setScale(0.55f);mn->addChild(m_tabAntiAim);
+        m_tabCreate=CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"),this,menu_selector(NeverloseMenu::onTabCreate));m_tabCreate->setPosition({cx-270,ty[4]});m_tabCreate->setScale(0.55f);mn->addChild(m_tabCreate);
+        m_tabLegit=CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"),this,menu_selector(NeverloseMenu::onTabLegit));m_tabLegit->setPosition({cx-270,ty[5]});m_tabLegit->setScale(0.55f);mn->addChild(m_tabLegit);
+        m_tabCosmetics=CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics"),this,menu_selector(NeverloseMenu::onTabCosmetics));m_tabCosmetics->setPosition({cx-270,ty[6]});m_tabCosmetics->setScale(0.55f);mn->addChild(m_tabCosmetics);
         m_jumpHackBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"),this,menu_selector(NeverloseMenu::onJumpHack));m_jumpHackBtn->setPosition({cx+60,cy+130});mn->addChild(m_jumpHackBtn);m_mainNodes.push_back(m_jumpHackBtn);
         m_noclipBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"),this,menu_selector(NeverloseMenu::onNoclip));m_noclipBtn->setPosition({cx+60,cy+60});mn->addChild(m_noclipBtn);m_rageNodes.push_back(m_noclipBtn);
         m_autoJumpBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("AutoJump: OFF"),this,menu_selector(NeverloseMenu::onAutoJump));m_autoJumpBtn->setPosition({cx+60,cy-10});mn->addChild(m_autoJumpBtn);m_rageNodes.push_back(m_autoJumpBtn);
@@ -167,7 +167,7 @@ public:
     void onSpeedhackDown(CCObject*){g_speed-=1;if(g_speed<0)g_speed=0;if(g_speedhack)CCDirector::get()->getScheduler()->setTimeScale(g_speed);m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f",g_speed)->getCString()));}
     void onSpeedValue(CCObject*){auto p=ValueInputPopup::create(true);if(p)this->addChild(p,9999);}
     void onCopyHack(CCObject*){g_copyHack=!g_copyHack;refreshButtons();}
-        void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_autoSafeMode;refreshButtons();}
+    void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_autoSafeMode;refreshButtons();}
     void onCheatIndicator(CCObject*){g_cheatIndicator=!g_cheatIndicator;refreshButtons();}
     void onCPS(CCObject*){g_showCPS=!g_showCPS;refreshButtons();}
     void onTime(CCObject*){g_showTime=!g_showTime;refreshButtons();}
