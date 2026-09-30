@@ -239,7 +239,7 @@ class $modify(MyLevelInfoLayer,LevelInfoLayer){
         if(!LevelInfoLayer::init(p0,p1))return false;
         if(!g_copyHack)return true;
         if(auto m=getChildByID("left-side-menu")){
-            if(auto b=typeinfoSpriteExtra*>(getChildBySpriteFrameName(m,"GJ_duplicateLockedBtn_001.png"))){
+            if(auto b=typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(m,"GJ_duplicateLockedBtn_001.png"))){
                 if(b->isVisible()){b->m_pfnSelector=menu_selector(LevelInfoLayer::confirmClone);b->setSprite(CCSprite::createWithSpriteFrameName("GJ_duplicateBtn_001.png"));}
             }else if(auto b=typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(m,"GJ_duplicateBtn_001.png"))){b->setVisible(true);}
         }
