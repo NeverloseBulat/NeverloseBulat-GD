@@ -5,7 +5,6 @@
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <cstdlib>
 #include <ctime>
-#include <cmath>
 using namespace geode::prelude;
 static bool g_noclip=false,g_autoJump=false,g_spinbot=false,g_nlGravite=false,g_ldm=false,g_autoLDM=false,g_speedhack=false,g_jumpHack=false,g_copyHack=false,g_autoSafeMode=false,g_aaEnabled=false,g_aaFlipX=false,g_aaFlipY=false,g_cheatIndicator=false,g_showCPS=false,g_showTime=false,g_showFPS=false,g_unlockIcons=false,g_unlockVault=false,g_unlockColors=false,g_unlockLevels=false;
 static float g_speed=1.0f,g_spinSpeed=5.0f,g_graviteTimer=0.0f;
@@ -101,14 +100,14 @@ public:
         auto mn=CCMenu::create();mn->setPosition({0,0});this->addChild(mn);
         auto cs=CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");cs->setScale(0.8f);
         auto cb=CCMenuItemSpriteExtra::create(cs,this,menu_selector(NeverloseMenu::onClose));cb->setPosition({cx+300,cy-200});mn->addChild(cb);
-        float ty[7]={cy+160,cy+112,cy+64,cy+16,cy-32,cy-80,cy-128};
-        m_tabMain=CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"),this,menu_selector(NeverloseMenu::onTabMain));m_tabMain->setPosition({cx-270,ty[0]});m_tabMain->setScale(0.7f);mn->addChild(m_tabMain);
-        m_tabRage=CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage"),this,menu_selector(NeverloseMenu::onTabRage));m_tabRage->setPosition({cx-270,ty[1]});m_tabRage->setScale(0.7f);mn->addChild(m_tabRage);
-        m_tabVisuals=CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals"),this,menu_selector(NeverloseMenu::onTabVisuals));m_tabVisuals->setPosition({cx-270,ty[2]});m_tabVisuals->setScale(0.7f);mn->addChild(m_tabVisuals);
-        m_tabAntiAim=CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim"),this,menu_selector(NeverloseMenu::onTabAntiAim));m_tabAntiAim->setPosition({cx-270,ty[3]});m_tabAntiAim->setScale(0.7f);mn->addChild(m_tabAntiAim);
-        m_tabCreate=CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"),this,menu_selector(NeverloseMenu::onTabCreate));m_tabCreate->setPosition({cx-270,ty[4]});m_tabCreate->setScale(0.7f);mn->addChild(m_tabCreate);
-        m_tabLegit=CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"),this,menu_selector(NeverloseMenu::onTabLegit));m_tabLegit->setPosition({cx-270,ty[5]});m_tabLegit->setScale(0.7f);mn->addChild(m_tabLegit);
-        m_tabCosmetics=CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics"),this,menu_selector(NeverloseMenu::onTabCosmetics));m_tabCosmetics->setPosition({cx-270,ty[6]});m_tabCosmetics->setScale(0.7f);mn->addChild(m_tabCosmetics);
+        float ty[7]={cy+105,cy+70,cy+35,cy,cy-35,cy-70,cy-105};
+        m_tabMain=CCMenuItemSpriteExtra::create(ButtonSprite::create("Main",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabMain));m_tabMain->setPosition({cx-270,ty[0]});m_tabMain->setScale(0.55f);mn->addChild(m_tabMain);
+        m_tabRage=CCMenuItemSpriteExtra::create(ButtonSprite::create("Rage",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabRage));m_tabRage->setPosition({cx-270,ty[1]});m_tabRage->setScale(0.55f);mn->addChild(m_tabRage);
+        m_tabVisuals=CCMenuItemSpriteExtra::create(ButtonSprite::create("Visuals",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabVisuals));m_tabVisuals->setPosition({cx-270,ty[2]});m_tabVisuals->setScale(0.55f);mn->addChild(m_tabVisuals);
+        m_tabAntiAim=CCMenuItemSpriteExtra::create(ButtonSprite::create("Anti-Aim",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabAntiAim));m_tabAntiAim->setPosition({cx-270,ty[3]});m_tabAntiAim->setScale(0.55f);mn->addChild(m_tabAntiAim);
+        m_tabCreate=CCMenuItemSpriteExtra::create(ButtonSprite::create("Create",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabCreate));m_tabCreate->setPosition({cx-270,ty[4]});m_tabCreate->setScale(0.55f);mn->addChild(m_tabCreate);
+        m_tabLegit=CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabLegit));m_tabLegit->setPosition({cx-270,ty[5]});m_tabLegit->setScale(0.55f);mn->addChild(m_tabLegit);
+        m_tabCosmetics=CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics",120,true,"bigFont.fnt","GJ_button_01.png",0.7f),this,menu_selector(NeverloseMenu::onTabCosmetics));m_tabCosmetics->setPosition({cx-270,ty[6]});m_tabCosmetics->setScale(0.55f);mn->addChild(m_tabCosmetics);
         m_jumpHackBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"),this,menu_selector(NeverloseMenu::onJumpHack));m_jumpHackBtn->setPosition({cx+60,cy+130});mn->addChild(m_jumpHackBtn);m_mainNodes.push_back(m_jumpHackBtn);
         m_noclipBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"),this,menu_selector(NeverloseMenu::onNoclip));m_noclipBtn->setPosition({cx+60,cy+60});mn->addChild(m_noclipBtn);m_rageNodes.push_back(m_noclipBtn);
         m_autoJumpBtn=CCMenuItemSpriteExtra::create(ButtonSprite::create("AutoJump: OFF"),this,menu_selector(NeverloseMenu::onAutoJump));m_autoJumpBtn->setPosition({cx+60,cy-10});mn->addChild(m_autoJumpBtn);m_rageNodes.push_back(m_autoJumpBtn);
@@ -168,7 +167,7 @@ public:
     void onSpeedhackDown(CCObject*){g_speed-=1;if(g_speed<0)g_speed=0;if(g_speedhack)CCDirector::get()->getScheduler()->setTimeScale(g_speed);m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f",g_speed)->getCString()));}
     void onSpeedValue(CCObject*){auto p=ValueInputPopup::create(true);if(p)this->addChild(p,9999);}
     void onCopyHack(CCObject*){g_copyHack=!g_copyHack;refreshButtons();}
-    void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_autoSafeMode;refreshButtons();}
+    void onAutoSafeMode(CCObject*){g_autoSafeMode=!g_auto SafeMode;refreshButtons();}
     void onCheatIndicator(CCObject*){g_cheatIndicator=!g_cheatIndicator;refreshButtons();}
     void onCPS(CCObject*){g_showCPS=!g_showCPS;refreshButtons();}
     void onTime(CCObject*){g_showTime=!g_showTime;refreshButtons();}
@@ -221,10 +220,17 @@ class $modify(MyPlayer,PlayerObject){
         PlayerObject::update(dt);
         if(g_aaEnabled){this->setFlipX(g_aaFlipX);this->setFlipY(g_aaFlipY);}else{this->setFlipX(false);this->setFlipY(false);}
         if(g_nlGravite){
-            g_graviteTimer+=dt;int ph=(int)(g_graviteTimer/0.3f);int ang=(ph*47)%360;
-            this->setRotation(ang);
-            this->setFlipX((ph%2)==0);this->setFlipY((ph%3)==0);
-        }else if(g_spinbot){this->setRotation(this->getRotation()+g_spinSpeed);}
+            g_graviteTimer+=dt;
+            int ph=(int)(g_graviteTimer/0.4f);
+            int dir=ph%4;
+            this->setRotation(0);
+            if(dir==0){this->setFlipX(false);this->setFlipY(false);}
+            else if(dir==1){this->setFlipX(true);this->setFlipY(false);}
+            else if(dir==2){this->setFlipX(false);this->setFlipY(true);}
+            else{this->setFlipX(true);this->setFlipY(true);}
+        }else if(g_spinbot){
+            this->setRotation(this->getRotation()+g_spinSpeed);
+        }
     }
 };
 
