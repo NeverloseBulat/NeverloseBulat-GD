@@ -9,7 +9,6 @@ using namespace geode::prelude;
 
 static bool g_noclip = false;
 static bool g_autoJump = false;
-static bool g_bhop = false;
 static bool g_spinbot = false;
 static bool g_ldm = false;
 static bool g_autoLDM = false;
@@ -23,7 +22,6 @@ static bool g_aaFlipY = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
 
-// ================= POPUP =================
 class ValueInputPopup : public CCLayer, public TextInputDelegate {
 protected:
     CCTextInputNode* m_input = nullptr;
@@ -86,14 +84,12 @@ public:
     void keyBackClicked() { this->removeFromParentAndCleanup(true); }
 };
 
-// ================= MENU =================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes;
     std::vector<CCMenuItemSpriteExtra*> m_tabButtons;
 
     CCMenuItemSpriteExtra *m_jumpHackBtn = nullptr;
-    CCMenuItemSpriteExtra *m_bhopBtn = nullptr;
     CCMenuItemSpriteExtra *m_copyHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoSafeModeBtn = nullptr;
     CCMenuItemSpriteExtra *m_noclipBtn = nullptr;
@@ -131,7 +127,6 @@ public:
 
     void refreshButtons() {
         m_jumpHackBtn->setNormalImage(ButtonSprite::create(g_jumpHack ? "Jump Hack: ON" : "Jump Hack: OFF"));
-        m_bhopBtn->setNormalImage(ButtonSprite::create(g_bhop ? "Bhop: ON" : "Bhop: OFF"));
         m_noclipBtn->setNormalImage(ButtonSprite::create(g_noclip ? "Noclip: ON" : "Noclip: OFF"));
         m_autoJumpBtn->setNormalImage(ButtonSprite::create(g_autoJump ? "AutoJump: ON" : "AutoJump: OFF"));
         m_ldmBtn->setNormalImage(ButtonSprite::create(g_ldm ? "LDM: ON" : "LDM: OFF"));
@@ -241,16 +236,10 @@ public:
 
         updateTabVisibility();
 
-        // ===== MAIN =====
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60, cy + 130});
         menu->addChild(m_jumpHackBtn); m_mainNodes.push_back(m_jumpHackBtn);
 
-        m_bhopBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Bhop: OFF"), this, menu_selector(NeverloseMenu::onBhop));
-        m_bhopBtn->setPosition({cx + 60, cy + 60});
-        menu->addChild(m_bhopBtn); m_mainNodes.push_back(m_bhopBtn);
-
-        // ===== RAGE =====
         m_noclipBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60, cy + 60});
         menu->addChild(m_noclipBtn); m_rageNodes.push_back(m_noclipBtn);
@@ -259,7 +248,6 @@ public:
         m_autoJumpBtn->setPosition({cx + 60, cy - 10});
         menu->addChild(m_autoJumpBtn); m_rageNodes.push_back(m_autoJumpBtn);
 
-        // ===== VISUALS =====
         m_ldmBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60, cy + 90});
         menu->addChild(m_ldmBtn); m_visualsNodes.push_back(m_ldmBtn);
@@ -268,7 +256,6 @@ public:
         m_autoLDMBtn->setPosition({cx + 60, cy + 25});
         menu->addChild(m_autoLDMBtn); m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ===== ANTI-AIM =====
         m_spinbotBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 160});
         menu->addChild(m_spinbotBtn); m_antiAimNodes.push_back(m_spinbotBtn);
@@ -325,12 +312,10 @@ public:
         m_shUp->setPosition({cx + 190, cy - 230});
         menu->addChild(m_shUp); m_antiAimNodes.push_back(m_shUp);
 
-        // ===== CREATE =====
         m_copyHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Copy Hack: OFF"), this, menu_selector(NeverloseMenu::onCopyHack));
         m_copyHackBtn->setPosition({cx + 60, cy + 100});
         menu->addChild(m_copyHackBtn); m_createNodes.push_back(m_copyHackBtn);
 
-        // ===== LEGIT =====
         m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
         m_autoSafeModeBtn->setPosition({cx + 60, cy + 100});
         menu->addChild(m_autoSafeModeBtn); m_legitNodes.push_back(m_autoSafeModeBtn);
@@ -354,7 +339,6 @@ public:
     void onTabLegit(CCObject*) { setPage(5); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
-    void onBhop(CCObject*) { g_bhop = !g_bhop; refreshButtons(); }
     void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*) { g_ldm = !g_ldm; GameManager::get()->setGameVariable("low_detail_mode", g_ldm); refreshButtons(); }
@@ -389,4 +373,19 @@ public:
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
         m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.3f", g_speed)->getCString()));
     }
-    void
+    void onSpeedhackDown(CCObject*) {
+        g_speed -= 5.0f;
+        if (g_speed < 0.0f) g_speed = 0.0f;
+        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
+        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.3f", g_speed)->getCString()));
+    }
+    void onSpeedValue(CCObject*) {
+        auto popup = ValueInputPopup::create(true);
+        if (popup) CCDirector::get()->getRunningScene()->addChild(popup, 99999);
+    }
+    void onCopyHack(CCObject*) { g_copyHack = !g_copyHack; refreshButtons(); }
+    void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
+
+    void onClose(CCObject*) {
+        this->runAction(CCSequence::create(
+            CCEaseBackIn::cr
