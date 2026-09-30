@@ -10,6 +10,7 @@
 
 using namespace geode::prelude;
 
+// ---------------- GLOBAL FLAGS ----------------
 static bool g_noclip=false, g_autoJump=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
             g_jumpHack=false, g_copyHack=false, g_autoSafeMode=false,
@@ -23,6 +24,7 @@ static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
 static bool  g_gravState = false;
 static int   g_clickCount = 0;
 
+// ---------------- HELPERS ----------------
 static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
     return ButtonSprite::create(state ? on : off);
 }
@@ -158,8 +160,7 @@ protected:
         *m_tabAntiAim=nullptr, *m_tabCreate=nullptr, *m_tabLegit=nullptr,
         *m_tabCosmetics=nullptr;
 
-    // --- drag ---
-    bool  m_dragging   = false;
+    bool  m_dragging = false;
     CCPoint m_dragStart = {0,0};
 
 public:
@@ -201,7 +202,6 @@ public:
     void setPage(int p) {
         if (p < 0) p = 0;
         if (p > 6) p = 6;
-
         for (auto n : m_mainNodes)      if (n) n->setVisible(p == 0);
         for (auto n : m_rageNodes)      if (n) n->setVisible(p == 1);
         for (auto n : m_visualsNodes)   if (n) n->setVisible(p == 2);
@@ -209,7 +209,6 @@ public:
         for (auto n : m_createNodes)    if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)     if (n) n->setVisible(p == 5);
         for (auto n : m_cosmeticsNodes) if (n) n->setVisible(p == 6);
-
         if (m_tabMain)      m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         if (m_tabRage)      m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
         if (m_tabVisuals)   m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
@@ -273,7 +272,6 @@ public:
         m_tabLegit     = mkTab("Legit",     menu_selector(NeverloseMenu::onTabLegit),     ty[5]);
         m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
 
-        // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -281,7 +279,6 @@ public:
         mn->addChild(m_jumpHackBtn);
         m_mainNodes.push_back(m_jumpHackBtn);
 
-        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -296,7 +293,6 @@ public:
         mn->addChild(m_autoJumpBtn);
         m_rageNodes.push_back(m_autoJumpBtn);
 
-        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60.f, cy + 90.f});
@@ -311,7 +307,6 @@ public:
         mn->addChild(m_autoLDMBtn);
         m_visualsNodes.push_back(m_autoLDMBtn);
 
-        // ANTI-AIM
         float lx = cx - 150.f;
         float rx = cx + 150.f;
 
@@ -411,7 +406,6 @@ public:
         m_shUp = mkArrow("+", menu_selector(NeverloseMenu::onSpeedhackUp), {rx + 70.f, cy - 55.f});
         m_antiAimNodes.push_back(m_shUp);
 
-        // CREATE
         m_copyHackBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Copy Hack: OFF"), this, menu_selector(NeverloseMenu::onCopyHack));
         m_copyHackBtn->setPosition({cx + 60.f, cy + 100.f});
@@ -419,14 +413,12 @@ public:
         mn->addChild(m_copyHackBtn);
         m_createNodes.push_back(m_copyHackBtn);
 
-        // LEGIT
         m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
         m_autoSafeModeBtn->setPosition({cx + 60.f, cy + 130.f});
         m_autoSafeModeBtn->setScale(0.55f);
         mn->addChild(m_autoSafeModeBtn);
         m_legitNodes.push_back(m_autoSafeModeBtn);
-
         m_cheatIndBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Cheat Ind: OFF"), this, menu_selector(NeverloseMenu::onCheatIndicator));
         m_cheatIndBtn->setPosition({cx + 60.f, cy + 60.f});
@@ -455,7 +447,6 @@ public:
         mn->addChild(m_fpsBtn);
         m_legitNodes.push_back(m_fpsBtn);
 
-        // COSMETICS
         m_unlockIconsBtn = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Icons: OFF"), this, menu_selector(NeverloseMenu::onUnlockIcons));
         m_unlockIconsBtn->setPosition({cx + 60.f, cy + 130.f});
@@ -486,9 +477,7 @@ public:
 
         setPage(0);
         refreshButtons();
-
         this->setPosition({0.f, 0.f});
-
         this->setScale(0.3f);
         this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)));
         this->setKeypadEnabled(true);
@@ -496,42 +485,25 @@ public:
         return true;
     }
 
-    // ============================================
-    //             DRAG HANDLING
-    // ============================================
     void registerWithTouchDispatcher() override {
         CCDirector::get()->getTouchDispatcher()->addTargetedDelegate(this, -501, true);
     }
-
     bool ccTouchBegan(CCTouch* touch, CCEvent*) override {
         auto worldPos = touch->getLocation();
         auto nodePos  = this->convertToNodeSpace(worldPos);
         if (nodePos.x < -400.f || nodePos.x > 400.f ||
             nodePos.y < -270.f || nodePos.y > 270.f) return false;
-
         m_dragging  = true;
         m_dragStart = worldPos - this->getPosition();
         return true;
     }
-
     void ccTouchMoved(CCTouch* touch, CCEvent*) override {
         if (!m_dragging) return;
-        auto worldPos = touch->getLocation();
-        auto newPos   = worldPos - m_dragStart;
-        this->setPosition(newPos);
+        this->setPosition(touch->getLocation() - m_dragStart);
     }
+    void ccTouchEnded(CCTouch*, CCEvent*) override { m_dragging = false; }
+    void ccTouchCancelled(CCTouch*, CCEvent*) override { m_dragging = false; }
 
-    void ccTouchEnded(CCTouch*, CCEvent*) override {
-        m_dragging = false;
-    }
-
-    void ccTouchCancelled(CCTouch*, CCEvent*) override {
-        m_dragging = false;
-    }
-
-    // ============================================
-    //                CALLBACKS
-    // ============================================
     void onTabMain(CCObject*)      { setPage(0); }
     void onTabRage(CCObject*)      { setPage(1); }
     void onTabVisuals(CCObject*)   { setPage(2); }
@@ -692,12 +664,20 @@ class $modify(NLPlayLayer, PlayLayer) {
         if (g_autoLDM)      GameManager::get()->setGameVariable("low_detail_mode", true);
 
         auto player = m_player1;
+        if (player) {
+            if (g_autoJump) {
+                player->pushButton(PlayerButton::Jump);
+            }
+            if (g_jumpHack && player->m_isOnGround) {
+                player->addToYVelocity(20.0, 1);
+            }
+        }
 
         if (g_shake) {
             g_shakeTimer += dt;
             if (m_objectLayer) {
-                float offX = ((rand() % 100) - 50) / 50.0f * 5.0f;
-                float offY = ((rand() % 100) - 50) / 50.0f * 5.0f;
+                float offX = ((rand() % 100) - 50) / 50.0f * 15.0f;
+                float offY = ((rand() % 100) - 50) / 50.0f * 15.0f;
                 m_objectLayer->setPosition({offX, offY});
             }
         } else if (m_objectLayer) {
@@ -709,7 +689,7 @@ class $modify(NLPlayLayer, PlayLayer) {
             if (g_gravTimer >= 0.15f) {
                 g_gravTimer = 0.f;
                 g_gravState = !g_gravState;
-                player->flipGravity(g_gravState, false);
+                player->flipGravity(g_gravState, true);
             }
         }
 
@@ -775,14 +755,25 @@ class $modify(NLPlayerObject, PlayerObject) {
     void update(float dt) {
         PlayerObject::update(dt);
 
+        if (g_spinbot) {
+            g_spinPhase += g_spinSpeed * dt * 10.f;
+            this->setRotation(g_spinPhase);
+        } else {
+            this->setRotation(0.f);
+        }
+
         if (g_aaEnabled) {
             if (g_aaFlipX) this->setScaleX(-1.0f);
             if (g_aaFlipY) this->setScaleY(-1.0f);
-            if (g_spinbot) {
-                g_spinPhase += g_spinSpeed * dt;
-                this->setRotation(g_spinPhase * 360.0f);
-            }
+        } else {
+            this->setScaleX(1.0f);
+            this->setScaleY(1.0f);
         }
+    }
+
+    void destroyPlayer(float p0, bool p1) override {
+        if (g_noclip) return;
+        PlayerObject::destroyPlayer(p0, p1);
     }
 };
 
