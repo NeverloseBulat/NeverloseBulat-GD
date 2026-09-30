@@ -17,12 +17,11 @@ static bool g_speedhack = false;
 static bool g_jumpHack = false;
 static bool g_autoClicker = false;
 static bool g_copyHack = false;
+static bool g_autoSafeMode = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
-static bool g_touchHeld = false;
 static int g_clickTimer = 0;
 
-// Для обновления лейблов из попапа
 static CCLabelBMFont* g_speedLabel = nullptr;
 static CCLabelBMFont* g_spinLabel = nullptr;
 
@@ -113,25 +112,54 @@ public:
 // ================= MENU =================
 class NeverloseMenu : public CCLayer {
 protected:
-    std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes;
+    std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes;
 
     CCMenuItemSpriteExtra *m_jumpHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoClickerBtn = nullptr;
     CCMenuItemSpriteExtra *m_copyHackBtn = nullptr;
+    CCMenuItemSpriteExtra *m_autoSafeModeBtn = nullptr;
 
     CCMenuItemSpriteExtra *m_noclipBtn, *m_autoJumpBtn;
     CCMenuItemSpriteExtra *m_ldmBtn, *m_autoLDMBtn;
     CCMenuItemSpriteExtra *m_spinbotBtn, *m_spinDown, *m_spinUp, *m_spinValueBtn;
     CCMenuItemSpriteExtra *m_speedhackBtn, *m_shDown, *m_shUp, *m_shValueBtn;
 
-    CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate;
-    CCMenuItemSpriteExtra *m_prevBtn, *m_nextBtn;
+    CCMenuItemSpriteExtra *m_tabMain, *m_tabRage, *m_tabVisuals, *m_tabAntiAim, *m_tabCreate, *m_tabLegit;
+
+    CCPoint m_swipeStart;
+    int m_page = 0;
 
 public:
     static NeverloseMenu* create() {
         auto r = new NeverloseMenu();
         if (r && r->init()) { r->autorelease(); return r; }
         delete r; return nullptr;
+    }
+
+    // ================== SWIPE ==================
+    void registerWithTouchDispatcher() {
+        cocos2d::CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(this, 0, false);
+    }
+
+    bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        m_swipeStart = touch->getLocation();
+        return true;
+    }
+
+    void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) {
+        auto end = touch->getLocation();
+        float dx = end.x - m_swipeStart.x;
+        float dy = end.y - m_swipeStart.y;
+        // Свайп по горизонтали (не по вертикали)
+        if (std::abs(dx) > 80 && std::abs(dx) > std::abs(dy)) {
+            if (dx < 0) {
+                // свайп влево -> следующая страница
+                if (m_page < 5) setPage(m_page + 1);
+            } else {
+                // свайп вправо -> предыдущая
+                if (m_page > 0) setPage(m_page - 1);
+            }
+        }
     }
 
     void refreshButtons() {
@@ -144,25 +172,31 @@ public:
         m_spinbotBtn->setNormalImage(ButtonSprite::create(g_spinbot ? "Spinbot: ON" : "Spinbot: OFF"));
         m_speedhackBtn->setNormalImage(ButtonSprite::create(g_speedhack ? "Speedhack: ON" : "Speedhack: OFF"));
         m_copyHackBtn->setNormalImage(ButtonSprite::create(g_copyHack ? "Copy Hack: ON" : "Copy Hack: OFF"));
+        m_autoSafeModeBtn->setNormalImage(ButtonSprite::create(g_autoSafeMode ? "Auto Safe Mode: ON" : "Auto Safe Mode: OFF"));
     }
 
     void setPage(int p) {
+        m_page = p;
         for (auto n : m_mainNodes) n->setVisible(p == 0);
         for (auto n : m_rageNodes) n->setVisible(p == 1);
         for (auto n : m_visualsNodes) n->setVisible(p == 2);
         for (auto n : m_antiAimNodes) n->setVisible(p == 3);
         for (auto n : m_createNodes) n->setVisible(p == 4);
+        for (auto n : m_legitNodes) n->setVisible(p == 5);
         m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
         m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
         m_tabAntiAim->setColor(p == 3 ? ccWHITE : ccGRAY);
         m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
+        m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
     }
 
     bool init() {
         if (!CCLayer::init()) return false;
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2, cy = ws.height / 2;
+
+        this->setTouchEnabled(true);
 
         auto overlay = CCLayerColor::create({0, 0, 0, 180});
         this->addChild(overlay, -1);
@@ -189,15 +223,15 @@ public:
         menu->setPosition({0, 0});
         this->addChild(menu);
 
-        // Крестик — сдвинут немного левее
+        // Крестик — чуть вверх и вправо
         auto cs = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
         cs->setScale(0.8f);
         auto closeBtn = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
-        closeBtn->setPosition({cx + 320, cy});
+        closeBtn->setPosition({cx + 340, cy + 30});
         menu->addChild(closeBtn);
 
-        // Tabs
-        float tabY[5] = {cy + 160, cy + 80, cy, cy - 80, cy - 160};
+        // Tabs (6 штук)
+        float tabY[6] = {cy + 180, cy + 110, cy + 40, cy - 30, cy - 100, cy - 170};
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
         menu->addChild(m_tabMain);
@@ -217,6 +251,10 @@ public:
         m_tabCreate = CCMenuItemSpriteExtra::create(ButtonSprite::create("Create"), this, menu_selector(NeverloseMenu::onTabCreate));
         m_tabCreate->setPosition({cx - 270, tabY[4]});
         menu->addChild(m_tabCreate);
+
+        m_tabLegit = CCMenuItemSpriteExtra::create(ButtonSprite::create("Legit"), this, menu_selector(NeverloseMenu::onTabLegit));
+        m_tabLegit->setPosition({cx - 270, tabY[5]});
+        menu->addChild(m_tabLegit);
 
         // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
@@ -295,6 +333,11 @@ public:
         m_copyHackBtn->setPosition({cx + 60, cy + 100});
         menu->addChild(m_copyHackBtn); m_createNodes.push_back(m_copyHackBtn);
 
+        // LEGIT
+        m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
+        m_autoSafeModeBtn->setPosition({cx + 60, cy + 100});
+        menu->addChild(m_autoSafeModeBtn); m_legitNodes.push_back(m_autoSafeModeBtn);
+
         setPage(0);
         refreshButtons();
         this->setScale(0.3f);
@@ -308,9 +351,10 @@ public:
     void onTabVisuals(CCObject*) { setPage(2); }
     void onTabAntiAim(CCObject*) { setPage(3); }
     void onTabCreate(CCObject*) { setPage(4); }
+    void onTabLegit(CCObject*) { setPage(5); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
-    void onAutoClicker(CCObject*) { g_autoClicker = !g_autoClicker; refreshButtons(); }
+    void onAutoClicker(CCObject*) { g_autoClicker = !g_autoClicker; g_clickTimer = 0; refreshButtons(); }
     void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*) {
@@ -361,6 +405,8 @@ public:
         if (popup) CCDirector::get()->getRunningScene()->addChild(popup, 99999);
     }
     void onCopyHack(CCObject*) { g_copyHack = !g_copyHack; refreshButtons(); }
+    void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
+
     void onClose(CCObject*) {
         this->runAction(CCSequence::create(
             CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
@@ -383,57 +429,6 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
         if (g_autoClicker && m_player1) {
             g_clickTimer++;
-            if (g_clickTimer % 4 == 0) m_player1->pushButton(PlayerButton::Jump);
-            else if (g_clickTimer % 4 == 2) m_player1->releaseButton(PlayerButton::Jump);
-            if (g_clickTimer > 1000) g_clickTimer = 0;
-        }
-    }
-    void onExit() {
-        CCDirector::get()->getScheduler()->setTimeScale(1.0f);
-        PlayLayer::onExit();
-    }
-};
-
-class $modify(MyPlayer, PlayerObject) {
-    void update(float dt) {
-        PlayerObject::update(dt);
-        if (g_spinbot) this->setRotation(this->getRotation() + g_spinSpeed);
-    }
-};
-
-// ================= COPY HACK =================
-class $modify(MyLevelInfoLayer, LevelInfoLayer) {
-    bool init(GJGameLevel* p0, bool p1) {
-        if (!LevelInfoLayer::init(p0, p1)) return false;
-        if (!g_copyHack) return true;
-        if (auto menu = getChildByID("left-side-menu")) {
-            if (auto btn = typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(menu, "GJ_duplicateLockedBtn_001.png"))) {
-                if (btn->isVisible()) {
-                    btn->m_pfnSelector = menu_selector(LevelInfoLayer::confirmClone);
-                    btn->setSprite(CCSprite::createWithSpriteFrameName("GJ_duplicateBtn_001.png"));
-                }
-            } else if (auto btn = typeinfo_cast<CCMenuItemSpriteExtra*>(getChildBySpriteFrameName(menu, "GJ_duplicateBtn_001.png"))) {
-                btn->setVisible(true);
-            }
-        }
-        return true;
-    }
-};
-
-// ================= PAUSE BUTTON =================
-class $modify(MyPauseLayer, PauseLayer) {
-    void customSetup() {
-        PauseLayer::customSetup();
-        auto ws = CCDirector::get()->getWinSize();
-        auto btn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Neverlose"), this, menu_selector(MyPauseLayer::onNeverlose));
-        btn->setPosition({ws.width * 0.12f, ws.height * 0.72f});
-        auto menu = CCMenu::create();
-        menu->addChild(btn);
-        menu->setPosition({0, 0});
-        this->addChild(menu, 100);
-    }
-    void onNeverlose(CCObject*) {
-        auto menu = NeverloseMenu::create();
-        if (menu) this->addChild(menu, 200);
-    }
-};
+            // Быстрый цикл: push -> hold -> release -> hold
+            if (g_clickTimer % 4 == 0) {
+                m_player1->pushButton(PlayerButton
