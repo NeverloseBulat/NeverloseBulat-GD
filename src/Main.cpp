@@ -4,6 +4,7 @@
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <cstdlib>
+#include <ctime>
 
 using namespace geode::prelude;
 
@@ -19,6 +20,14 @@ static bool g_autoSafeMode = false;
 static bool g_aaEnabled = false;
 static bool g_aaFlipX = false;
 static bool g_aaFlipY = false;
+static bool g_cheatIndicator = false;
+static bool g_showCPS = false;
+static bool g_showTime = false;
+static bool g_showFPS = false;
+static bool g_unlockIcons = false;
+static bool g_unlockVault = false;
+static bool g_unlockColors = false;
+static bool g_unlockLevels = false;
 static float g_speed = 1.0f;
 static float g_spinSpeed = 5.0f;
 
@@ -57,12 +66,12 @@ public:
         auto menu = CCMenu::create();
         menu->setPosition({0, 0});
         this->addChild(menu);
+        float cx = ws.width / 2, cy = ws.height / 2;
         auto mkBtn = [&](const char* t, cocos2d::SEL_MenuHandler cb, float x, float y) {
             auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb);
             b->setPosition({x, y});
             menu->addChild(b);
         };
-        float cx = ws.width / 2, cy = ws.height / 2;
         mkBtn("-500", menu_selector(ValueInputPopup::onMinus500), cx - 200, cy - 30);
         mkBtn("-1",   menu_selector(ValueInputPopup::onMinus1),   cx - 70,  cy - 30);
         mkBtn("+1",   menu_selector(ValueInputPopup::onPlus1),    cx + 70,  cy - 30);
@@ -101,15 +110,22 @@ public:
     void onCancel(CCObject*) { this->removeFromParentAndCleanup(true); }
     void keyBackClicked() { this->removeFromParentAndCleanup(true); }
 };
-
 class NeverloseMenu : public CCLayer {
 protected:
-    std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes;
+    std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes, m_createNodes, m_legitNodes, m_cosmeticsNodes;
     std::vector<CCMenuItemSpriteExtra*> m_tabButtons;
 
     CCMenuItemSpriteExtra *m_jumpHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_copyHackBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoSafeModeBtn = nullptr;
+    CCMenuItemSpriteExtra *m_cheatIndBtn = nullptr;
+    CCMenuItemSpriteExtra *m_cpsBtn = nullptr;
+    CCMenuItemSpriteExtra *m_timeBtn = nullptr;
+    CCMenuItemSpriteExtra *m_fpsBtn = nullptr;
+    CCMenuItemSpriteExtra *m_unlockIconsBtn = nullptr;
+    CCMenuItemSpriteExtra *m_unlockVaultBtn = nullptr;
+    CCMenuItemSpriteExtra *m_unlockColorsBtn = nullptr;
+    CCMenuItemSpriteExtra *m_unlockLevelsBtn = nullptr;
     CCMenuItemSpriteExtra *m_noclipBtn = nullptr;
     CCMenuItemSpriteExtra *m_autoJumpBtn = nullptr;
     CCMenuItemSpriteExtra *m_ldmBtn = nullptr;
@@ -131,6 +147,7 @@ protected:
     CCMenuItemSpriteExtra *m_tabAntiAim = nullptr;
     CCMenuItemSpriteExtra *m_tabCreate = nullptr;
     CCMenuItemSpriteExtra *m_tabLegit = nullptr;
+    CCMenuItemSpriteExtra *m_tabCosmetics = nullptr;
     CCMenuItemSpriteExtra *m_scrollUpBtn = nullptr;
     CCMenuItemSpriteExtra *m_scrollDownBtn = nullptr;
     int m_tabOffset = 0;
@@ -156,6 +173,14 @@ public:
         m_aaEnabledBtn->setNormalImage(ButtonSprite::create(g_aaEnabled ? "Anti-Aim: ON" : "Anti-Aim: OFF"));
         m_aaFlipXBtn->setNormalImage(ButtonSprite::create(g_aaFlipX ? "Flip Back: ON" : "Flip Back: OFF"));
         m_aaFlipYBtn->setNormalImage(ButtonSprite::create(g_aaFlipY ? "Flip Down: ON" : "Flip Down: OFF"));
+        m_cheatIndBtn->setNormalImage(ButtonSprite::create(g_cheatIndicator ? "Cheat Indicator: ON" : "Cheat Indicator: OFF"));
+        m_cpsBtn->setNormalImage(ButtonSprite::create(g_showCPS ? "CPS: ON" : "CPS: OFF"));
+        m_timeBtn->setNormalImage(ButtonSprite::create(g_showTime ? "Time: ON" : "Time: OFF"));
+        m_fpsBtn->setNormalImage(ButtonSprite::create(g_showFPS ? "FPS: ON" : "FPS: OFF"));
+        m_unlockIconsBtn->setNormalImage(ButtonSprite::create(g_unlockIcons ? "Unlock Icons: ON" : "Unlock Icons: OFF"));
+        m_unlockVaultBtn->setNormalImage(ButtonSprite::create(g_unlockVault ? "Unlock Vault: ON" : "Unlock Vault: OFF"));
+        m_unlockColorsBtn->setNormalImage(ButtonSprite::create(g_unlockColors ? "Unlock Colors: ON" : "Unlock Colors: OFF"));
+        m_unlockLevelsBtn->setNormalImage(ButtonSprite::create(g_unlockLevels ? "Unlock Levels: ON" : "Unlock Levels: OFF"));
     }
 
     void updateTabVisibility() {
@@ -167,19 +192,21 @@ public:
 
     void setPage(int p) {
         if (p < 0) p = 0;
-        if (p >= 6) p = 5;
+        if (p >= 7) p = 6;
         for (auto n : m_mainNodes) n->setVisible(p == 0);
         for (auto n : m_rageNodes) n->setVisible(p == 1);
         for (auto n : m_visualsNodes) n->setVisible(p == 2);
         for (auto n : m_antiAimNodes) n->setVisible(p == 3);
         for (auto n : m_createNodes) n->setVisible(p == 4);
         for (auto n : m_legitNodes) n->setVisible(p == 5);
+        for (auto n : m_cosmeticsNodes) n->setVisible(p == 6);
         m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
         m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
         m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
         m_tabAntiAim->setColor(p == 3 ? ccWHITE : ccGRAY);
         m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
         m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
+        m_tabCosmetics->setColor(p == 6 ? ccWHITE : ccGRAY);
     }
 
     bool init() {
@@ -219,14 +246,14 @@ public:
         menu->addChild(closeBtn);
 
         m_scrollUpBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("^"), this, menu_selector(NeverloseMenu::onScrollUp));
-        m_scrollUpBtn->setPosition({cx - 410, cy + 150});
+        m_scrollUpBtn->setPosition({cx - 270, cy + 195});
         menu->addChild(m_scrollUpBtn);
 
         m_scrollDownBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("v"), this, menu_selector(NeverloseMenu::onScrollDown));
-        m_scrollDownBtn->setPosition({cx - 410, cy - 150});
+        m_scrollDownBtn->setPosition({cx - 270, cy - 195});
         menu->addChild(m_scrollDownBtn);
 
-        float tabY[6] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210};
+        float tabY[7] = {cy + 140, cy + 70, cy, cy - 70, cy - 140, cy - 210, cy - 280};
 
         m_tabMain = CCMenuItemSpriteExtra::create(ButtonSprite::create("Main"), this, menu_selector(NeverloseMenu::onTabMain));
         m_tabMain->setPosition({cx - 270, tabY[0]});
@@ -252,12 +279,18 @@ public:
         m_tabLegit->setPosition({cx - 270, tabY[5]});
         menu->addChild(m_tabLegit); m_tabButtons.push_back(m_tabLegit);
 
+        m_tabCosmetics = CCMenuItemSpriteExtra::create(ButtonSprite::create("Cosmetics"), this, menu_selector(NeverloseMenu::onTabCosmetics));
+        m_tabCosmetics->setPosition({cx - 270, tabY[6]});
+        menu->addChild(m_tabCosmetics); m_tabButtons.push_back(m_tabCosmetics);
+
         updateTabVisibility();
 
+        // MAIN
         m_jumpHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Jump Hack: OFF"), this, menu_selector(NeverloseMenu::onJumpHack));
         m_jumpHackBtn->setPosition({cx + 60, cy + 130});
         menu->addChild(m_jumpHackBtn); m_mainNodes.push_back(m_jumpHackBtn);
 
+        // RAGE
         m_noclipBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Noclip: OFF"), this, menu_selector(NeverloseMenu::onNoclip));
         m_noclipBtn->setPosition({cx + 60, cy + 60});
         menu->addChild(m_noclipBtn); m_rageNodes.push_back(m_noclipBtn);
@@ -266,6 +299,7 @@ public:
         m_autoJumpBtn->setPosition({cx + 60, cy - 10});
         menu->addChild(m_autoJumpBtn); m_rageNodes.push_back(m_autoJumpBtn);
 
+        // VISUALS
         m_ldmBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("LDM: OFF"), this, menu_selector(NeverloseMenu::onLDM));
         m_ldmBtn->setPosition({cx + 60, cy + 90});
         menu->addChild(m_ldmBtn); m_visualsNodes.push_back(m_ldmBtn);
@@ -274,6 +308,7 @@ public:
         m_autoLDMBtn->setPosition({cx + 60, cy + 25});
         menu->addChild(m_autoLDMBtn); m_visualsNodes.push_back(m_autoLDMBtn);
 
+        // ANTI-AIM
         m_spinbotBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Spinbot: OFF"), this, menu_selector(NeverloseMenu::onSpinbot));
         m_spinbotBtn->setPosition({cx + 60, cy + 160});
         menu->addChild(m_spinbotBtn); m_antiAimNodes.push_back(m_spinbotBtn);
@@ -330,13 +365,48 @@ public:
         m_shUp->setPosition({cx + 190, cy - 230});
         menu->addChild(m_shUp); m_antiAimNodes.push_back(m_shUp);
 
+        // CREATE
         m_copyHackBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Copy Hack: OFF"), this, menu_selector(NeverloseMenu::onCopyHack));
         m_copyHackBtn->setPosition({cx + 60, cy + 100});
         menu->addChild(m_copyHackBtn); m_createNodes.push_back(m_copyHackBtn);
 
+        // LEGIT
         m_autoSafeModeBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Auto Safe Mode: OFF"), this, menu_selector(NeverloseMenu::onAutoSafeMode));
-        m_autoSafeModeBtn->setPosition({cx + 60, cy + 100});
+        m_autoSafeModeBtn->setPosition({cx + 60, cy + 130});
         menu->addChild(m_autoSafeModeBtn); m_legitNodes.push_back(m_autoSafeModeBtn);
+
+        m_cheatIndBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Cheat Indicator: OFF"), this, menu_selector(NeverloseMenu::onCheatIndicator));
+        m_cheatIndBtn->setPosition({cx + 60, cy + 60});
+        menu->addChild(m_cheatIndBtn); m_legitNodes.push_back(m_cheatIndBtn);
+
+        m_cpsBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("CPS: OFF"), this, menu_selector(NeverloseMenu::onCPS));
+        m_cpsBtn->setPosition({cx + 60, cy - 10});
+        menu->addChild(m_cpsBtn); m_legitNodes.push_back(m_cpsBtn);
+
+        m_timeBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Time: OFF"), this, menu_selector(NeverloseMenu::onTime));
+        m_timeBtn->setPosition({cx + 60, cy - 80});
+        menu->addChild(m_timeBtn); m_legitNodes.push_back(m_timeBtn);
+
+        m_fpsBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("FPS: OFF"), this, menu_selector(NeverloseMenu::onFPS));
+        m_fpsBtn->setPosition({cx + 60, cy - 150});
+        menu->addChild(m_fpsBtn); m_legitNodes.push_back(m_fpsBtn);
+
+        // COSMETICS
+        m_unlockIconsBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Unlock Icons: OFF"), this, menu_selector(NeverloseMenu::onUnlockIcons));
+        m_unlockIconsBtn->setPosition({cx + 60, cy + 130});
+        menu->addChild(m_unlockIconsBtn); m_cosmeticsNodes.push_back(m_unlockIconsBtn);
+
+        m_unlockVaultBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Unlock Vault: OFF"), this, menu_selector(NeverloseMenu::onUnlockVault));
+        m_unlockVaultBtn->setPosition({cx + 60, cy + 60});
+        menu->addChild(m_unlockVaultBtn); m_cosmeticsNodes.push_back(m_unlockVaultBtn);
+
+        m_unlockColorsBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Unlock Colors: OFF"), this, menu_selector(NeverloseMenu::onUnlockColors));
+        m_unlockColorsBtn->setPosition({cx + 60, cy - 10});
+        menu->addChild(m_unlockColorsBtn); m_cosmeticsNodes.push_back(m_unlockColorsBtn);
+
+        m_unlockLevelsBtn = CCMenuItemSpriteExtra::create(ButtonSprite::create("Unlock Levels: OFF"), this, menu_selector(NeverloseMenu::onUnlockLevels));
+        m_unlockLevelsBtn->setPosition({cx + 60, cy - 80});
+        menu->addChild(m_unlockLevelsBtn); m_cosmeticsNodes.push_back(m_unlockLevelsBtn);
 
         setPage(0);
         refreshButtons();
@@ -355,6 +425,7 @@ public:
     void onTabAntiAim(CCObject*) { setPage(3); }
     void onTabCreate(CCObject*) { setPage(4); }
     void onTabLegit(CCObject*) { setPage(5); }
+    void onTabCosmetics(CCObject*) { setPage(6); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*) { g_noclip = !g_noclip; refreshButtons(); }
@@ -389,44 +460,109 @@ public:
         g_speed += 1.0f;
         if (g_speed > 100.0f) g_speed = 100.0f;
         if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_speed)->getCString()));
-    }
-    void onSpeedhackDown(CCObject*) {
-        g_speed -= 1.0f;
-        if (g_speed < 0.0f) g_speed = 0.0f;
-        if (g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(g_speed);
-        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_speed)->getCString()));
-    }
-    void onSpeedValue(CCObject*) {
-        auto popup = ValueInputPopup::create(true);
-        if (popup) this->addChild(popup, 9999);
-    }
-    void onCopyHack(CCObject*) { g_copyHack = !g_copyHack; refreshButtons(); }
-    void onAutoSafeMode(CCObject*) { g_autoSafeMode = !g_autoSafeMode; refreshButtons(); }
+        m_shValueBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("%.2f", g_speed)
+            class $modify(MyPlayLayer, PlayLayer) {
+    struct Fields {
+        CCLabelBMFont* m_cheatLbl = nullptr;
+        CCLabelBMFont* m_cpsLbl = nullptr;
+        CCLabelBMFont* m_timeLbl = nullptr;
+        CCLabelBMFont* m_fpsLbl = nullptr;
+        int m_frames = 0;
+        float m_timeAcc = 0.0f;
+        int m_clicks = 0;
+    };
 
-    void onClose(CCObject*) {
-        this->runAction(CCSequence::create(
-            CCEaseBackIn::create(CCScaleTo::create(0.2f, 0.3f)),
-            CCCallFunc::create(this, callfunc_selector(NeverloseMenu::removeMe)),
-            nullptr));
-    }
-    void removeMe() { this->removeFromParentAndCleanup(true); }
-    void keyBackClicked() { onClose(nullptr); }
-};
+    bool init(GJGameLevel* p0, bool p1, bool p2) {
+        if (!PlayLayer::init(p0, p1, p2)) return false;
+        auto ws = CCDirector::get()->getWinSize();
+        auto f = m_fields.self();
 
-class $modify(MyPlayLayer, PlayLayer) {
+        f->m_cheatLbl = CCLabelBMFont::create("CHEAT", "bigFont.fnt");
+        f->m_cheatLbl->setPosition({30, ws.height - 30});
+        f->m_cheatLbl->setAnchorPoint({0, 1});
+        f->m_cheatLbl->setScale(0.6f);
+        f->m_cheatLbl->setColor({255, 0, 0});
+        f->m_cheatLbl->setVisible(false);
+        this->addChild(f->m_cheatLbl, 1000);
+
+        f->m_cpsLbl = CCLabelBMFont::create("CPS: 0", "bigFont.fnt");
+        f->m_cpsLbl->setPosition({30, ws.height - 60});
+        f->m_cpsLbl->setAnchorPoint({0, 1});
+        f->m_cpsLbl->setScale(0.5f);
+        f->m_cpsLbl->setColor({0, 200, 255});
+        f->m_cpsLbl->setVisible(false);
+        this->addChild(f->m_cpsLbl, 1000);
+
+        f->m_timeLbl = CCLabelBMFont::create("00:00", "bigFont.fnt");
+        f->m_timeLbl->setPosition({30, ws.height - 90});
+        f->m_timeLbl->setAnchorPoint({0, 1});
+        f->m_timeLbl->setScale(0.5f);
+        f->m_timeLbl->setColor({0, 200, 255});
+        f->m_timeLbl->setVisible(false);
+        this->addChild(f->m_timeLbl, 1000);
+
+        f->m_fpsLbl = CCLabelBMFont::create("FPS: 0", "bigFont.fnt");
+        f->m_fpsLbl->setPosition({30, ws.height - 120});
+        f->m_fpsLbl->setAnchorPoint({0, 1});
+        f->m_fpsLbl->setScale(0.5f);
+        f->m_fpsLbl->setColor({0, 200, 255});
+        f->m_fpsLbl->setVisible(false);
+        this->addChild(f->m_fpsLbl, 1000);
+
+        return true;
+    }
+
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
         if (g_noclip) return;
         PlayLayer::destroyPlayer(player, obj);
     }
+
     void update(float dt) {
         PlayLayer::update(dt);
+
         if (g_autoJump && m_player1) m_player1->pushButton(PlayerButton::Jump);
         if (g_jumpHack && m_player1) m_player1->m_yVelocity = 20.0f;
+
+        auto f = m_fields.self();
+        if (f->m_cheatLbl) f->m_cheatLbl->setVisible(g_cheatIndicator);
+        if (f->m_cpsLbl) f->m_cpsLbl->setVisible(g_showCPS);
+        if (f->m_timeLbl) f->m_timeLbl->setVisible(g_showTime);
+        if (f->m_fpsLbl) f->m_fpsLbl->setVisible(g_showFPS);
+
+        f->m_frames++;
+        f->m_timeAcc += dt;
+        if (f->m_timeAcc >= 1.0f) {
+            int fps = (int)(f->m_frames / f->m_timeAcc);
+            if (f->m_fpsLbl) f->m_fpsLbl->setString(CCString::createWithFormat("FPS: %d", fps)->getCString());
+            f->m_frames = 0;
+            f->m_timeAcc = 0;
+            if (f->m_cpsLbl) f->m_cpsLbl->setString(CCString::createWithFormat("CPS: %d", f->m_clicks)->getCString());
+            f->m_clicks = 0;
+        }
+        if (f->m_timeLbl) {
+            time_t now = time(nullptr);
+            struct tm* t = localtime(&now);
+            f->m_timeLbl->setString(CCString::createWithFormat("%02d:%02d", t->tm_hour, t->tm_min)->getCString());
+        }
+    }
+
+    void onExit() {
+        CCDirector::get()->getScheduler()->setTimeScale(1.0f);
+        PlayLayer::onExit();
     }
 };
 
 class $modify(MyPlayer, PlayerObject) {
+    void pushButton(PlayerButton btn) {
+        if (btn == PlayerButton::Jump) {
+            auto pl = PlayLayer::get();
+            if (pl) {
+                auto myPl = static_cast<MyPlayLayer*>(pl);
+                if (myPl) myPl->m_fields->m_clicks++;
+            }
+        }
+        PlayerObject::pushButton(btn);
+    }
     void releaseButton(PlayerButton btn) {
         if (g_autoJump && btn == PlayerButton::Jump) return;
         PlayerObject::releaseButton(btn);
