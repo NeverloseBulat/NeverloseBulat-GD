@@ -22,7 +22,6 @@ static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
              g_spinPhase = 0.0f, g_gravTimer = 0.0f;
 static bool  g_gravState = false;
 static int   g_clickCount = 0;
-static int   g_themeIndex = 0;
 
 static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
     return ButtonSprite::create(state ? on : off);
@@ -107,7 +106,7 @@ protected:
         *m_nlGraviteBtn=nullptr, *m_spinDown=nullptr, *m_spinUp=nullptr,
         *m_spinValueBtn=nullptr, *m_speedhackBtn=nullptr, *m_shDown=nullptr,
         *m_shUp=nullptr, *m_shValueBtn=nullptr, *m_aaEnabledBtn=nullptr,
-        *m_aaFlipXBtn=nullptr, *m_aaFlipYBtn=nullptr, *m_themeBtn=nullptr,
+        *m_aaFlipXBtn=nullptr, *m_aaFlipYBtn=nullptr,
         *m_tabMain=nullptr, *m_tabRage=nullptr, *m_tabVisuals=nullptr,
         *m_tabAntiAim=nullptr, *m_tabCreate=nullptr, *m_tabLegit=nullptr,
         *m_tabCosmetics=nullptr;
@@ -126,25 +125,6 @@ public:
         if (!r) return nullptr;
         if (r->init()) { r->autorelease(); return r; }
         delete r; return nullptr;
-    }
-
-    // -------- тема --------
-    ccColor3B themeColor() {
-        switch (g_themeIndex % 6) {
-            case 0: return {15,15,15};    // чёрный
-            case 1: return {20,30,60};    // синий
-            case 2: return {60,15,15};    // красный
-            case 3: return {15,50,20};    // зелёный
-            case 4: return {45,15,60};    // фиолетовый
-            default: return {55,45,10};   // золотой
-        }
-    }
-    void applyTheme() {
-        if (m_mainPanel) m_mainPanel->setColor(themeColor());
-        if (m_sidePanel) {
-            auto c = themeColor();
-            m_sidePanel->setColor({(GLubyte)std::min(255, c.r+10), (GLubyte)std::min(255, c.g+10), (GLubyte)std::min(255, c.b+15)});
-        }
     }
 
     void refreshButtons() {
@@ -177,7 +157,6 @@ public:
     void setPage(int p) {
         if (p < 0) p = 0; if (p > 6) p = 6;
 
-        // ----- анимация смены вкладки -----
         if (p != m_curPage && m_mainPanel) {
             m_mainPanel->stopAllActions();
             m_mainPanel->runAction(CCSequence::create(
@@ -212,7 +191,7 @@ public:
 
         m_mainPanel = CCScale9Sprite::create("GJ_square01.png");
         m_mainPanel->setContentSize({780.f, 520.f}); m_mainPanel->setPosition({cx, cy});
-        m_mainPanel->setColor(themeColor()); this->addChild(m_mainPanel);
+        m_mainPanel->setColor({15,15,15}); this->addChild(m_mainPanel);
 
         m_sidePanel = CCScale9Sprite::create("GJ_square01.png");
         m_sidePanel->setContentSize({220.f, 500.f}); m_sidePanel->setPosition({cx - 270.f, cy});
@@ -244,15 +223,9 @@ public:
             btn->setPosition(pos); btn->setScale(sc); mn->addChild(btn); vec.push_back(btn);
         };
 
-        // MAIN
         addBtn(m_jumpHackBtn, "Jump Hack: OFF", menu_selector(NeverloseMenu::onJumpHack), {cx + 60.f, cy + 130.f}, 0.55f, m_mainNodes);
-        addBtn(m_themeBtn,    "Theme",          menu_selector(NeverloseMenu::onTheme),    {cx + 60.f, cy + 60.f},  0.55f, m_mainNodes);
-
-        // RAGE
         addBtn(m_noclipBtn,   "Noclip: OFF",    menu_selector(NeverloseMenu::onNoclip),   {cx + 60.f, cy + 130.f}, 0.55f, m_rageNodes);
         addBtn(m_autoJumpBtn, "AutoJump: OFF",  menu_selector(NeverloseMenu::onAutoJump), {cx + 60.f, cy + 60.f},  0.55f, m_rageNodes);
-
-        // VISUALS
         addBtn(m_ldmBtn,      "LDM: OFF",       menu_selector(NeverloseMenu::onLDM),      {cx + 60.f, cy + 90.f},  0.55f, m_visualsNodes);
         addBtn(m_autoLDMBtn,  "Auto LDM: OFF",  menu_selector(NeverloseMenu::onAutoLDM),  {cx + 60.f, cy + 25.f},  0.55f, m_visualsNodes);
 
@@ -302,7 +275,6 @@ public:
         setPage(0);
         refreshButtons();
 
-        // ---- открытие: fade-in + scale bounce ----
         this->setOpacity(0);
         this->setScale(0.3f);
         this->runAction(CCSpawn::create(
@@ -324,7 +296,6 @@ public:
         m_dragStart = touch->getLocation() - this->getPosition();
         return true;
     }
-       }
     void ccTouchMoved(CCTouch* touch, CCEvent*) override {
         if (m_dragging) this->setPosition(touch->getLocation() - m_dragStart);
     }
@@ -344,10 +315,9 @@ public:
     void onAutoJump(CCObject*) { g_autoJump = !g_autoJump; refreshButtons(); }
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
-    void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
+        void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
     void onShake(CCObject*)    { g_shake = !g_shake; g_shakeTimer = 0.f; refreshButtons(); }
     void onNLGravite(CCObject*){ g_nlGravite = !g_nlGravite; g_gravTimer = 0.f; refreshButtons(); }
-    void onTheme(CCObject*)    { g_themeIndex++; applyTheme(); }
 
     void onSpinUp(CCObject*) {
         g_spinSpeed += 1.f; if (g_spinSpeed > 500.f) g_spinSpeed = 500.f;
@@ -391,7 +361,6 @@ public:
     void onAAFlipX(CCObject*)        { g_aaFlipX        = !g_aaFlipX;        refreshButtons(); }
     void onAAFlipY(CCObject*)        { g_aaFlipY        = !g_aaFlipY;        refreshButtons(); }
 
-    // ---- закрытие с анимацией ----
     void onClose(CCObject*) {
         if (m_closing) return;
         m_closing = true;
@@ -443,6 +412,7 @@ class $modify(NLPlayLayer, PlayLayer) {
             if (f->cheatLabel) { f->cheatLabel->setScale(0.5f); f->cheatLabel->setPosition({ws.width - 60.f, ws.height - 20.f}); f->cheatLabel->setColor({255,50,50}); this->addChild(f->cheatLabel, 100); }
         }
         return true;
+    }
 
     void update(float dt) override {
         PlayLayer::update(dt);
