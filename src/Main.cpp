@@ -31,7 +31,6 @@ static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
              g_spinPhase = 0.0f, g_gravTimer = 0.0f,
              g_nlGravPhase = 0.0f, g_airStrafeSpeed = 1.0f;
 static bool  g_gravState = false;
-static bool  g_jumpHeld  = false;
 static int   g_clickCount = 0;
 
 static ButtonSprite* makeToggle(const char* on, const char* off, bool state) {
@@ -519,11 +518,6 @@ class $modify(NLPlayLayer, PlayLayer) {
         return true;
     }
 
-    void handleButton(bool down, int button, bool isPlayer1) override {
-        PlayLayer::handleButton(down, button, isPlayer1);
-        if (button == 1) g_jumpHeld = down;
-    }
-
     void update(float dt) override {
         PlayLayer::update(dt);
         auto f = m_fields.self();
@@ -607,20 +601,17 @@ class $modify(NLPlayerObject, PlayerObject) {
     void update(float dt) override {
         PlayerObject::update(dt);
 
-        // Spinbot
         if (g_spinbot) {
             g_spinPhase += g_spinSpeed * 60.f * dt;
             if (g_spinPhase > 100000.f) g_spinPhase -= 100000.f;
             this->setRotation(g_spinPhase);
         }
 
-        // Anti-Aim
         if (g_aaEnabled) {
             if (g_aaFlipX) this->setScaleX(-1.0f);
             if (g_aaFlipY) this->setScaleY(-1.0f);
         }
 
-        // Air Strafe
         if (g_airStrafe && !this->m_isOnGround) {
             if (this->m_platformerXVelocity != 0.f) {
                 float addX = this->m_platformerXVelocity * g_airStrafeSpeed * 0.15f;
@@ -628,8 +619,7 @@ class $modify(NLPlayerObject, PlayerObject) {
             }
         }
 
-        // Shake — пока зажат прыжок, флипаем гравитацию
-        if (g_shake && g_jumpHeld) {
+        if (g_shake) {
             g_shakeTimer += dt;
             if (g_shakeTimer >= 0.05f) {
                 g_shakeTimer = 0.f;
@@ -638,7 +628,6 @@ class $modify(NLPlayerObject, PlayerObject) {
             }
         }
 
-        // NL Gravite — мгновенный поворот
         if (g_nlGravite) {
             g_nlGravPhase += dt;
             if (g_nlGravPhase >= 0.10f) {
@@ -660,3 +649,4 @@ class $modify(NLLevelInfoLayer, LevelInfoLayer) {
 $execute {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 }
+  
