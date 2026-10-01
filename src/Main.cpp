@@ -18,8 +18,6 @@ static bool  g_blurEffect   = false;
 static bool  g_rainbowMode  = false;
 static bool  g_glowCube     = false;
 static int   g_cubeScale    = 1;
-static float g_rainbowTimer = 0.f;
-static int   g_rainbowPhase = 0;
 
 static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
@@ -29,12 +27,10 @@ static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_showFPS=false, g_unlockIcons=false, g_unlockVault=false,
             g_unlockColors=false, g_unlockLevels=false,
             g_showPercent=false, g_hidePlayer=false, g_slowMo=false,
-            g_fastMo=false, g_practiceMusic=false, g_noDeathEffect=false,
-            g_airStrafe=false;
+            g_fastMo=false, g_practiceMusic=false, g_noDeathEffect=false;
 
 static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
-             g_spinPhase = 0.0f, g_gravTimer = 0.0f,
-             g_nlGravPhase = 0.0f, g_airStrafeSpeed = 1.0f;
+             g_spinPhase = 0.0f, g_nlGravPhase = 0.0f;
 static bool  g_gravState = false;
 static int   g_clickCount = 0;
 
@@ -117,7 +113,7 @@ protected:
         *m_autoSafeModeBtn=nullptr, *m_cheatIndBtn=nullptr, *m_cpsBtn=nullptr,
         *m_timeBtn=nullptr, *m_fpsBtn=nullptr, *m_unlockIconsBtn=nullptr,
         *m_unlockVaultBtn=nullptr, *m_unlockColorsBtn=nullptr, *m_unlockLevelsBtn=nullptr,
-        *m_noclipBtn=nullptr, *m_airStrafeBtn=nullptr, *m_ldmBtn=nullptr,
+        *m_noclipBtn=nullptr, *m_ldmBtn=nullptr,
         *m_autoLDMBtn=nullptr, *m_spinbotBtn=nullptr, *m_shakeBtn=nullptr,
         *m_nlGraviteBtn=nullptr, *m_spinDown=nullptr, *m_spinUp=nullptr,
         *m_spinValueBtn=nullptr, *m_speedhackBtn=nullptr, *m_shDown=nullptr,
@@ -200,7 +196,6 @@ public:
     void refreshButtons() {
         if (m_jumpHackBtn)     m_jumpHackBtn->setNormalImage(makeToggle("Jump Hack: ON","Jump Hack: OFF", g_jumpHack));
         if (m_noclipBtn)       m_noclipBtn->setNormalImage(makeToggle("Noclip: ON","Noclip: OFF", g_noclip));
-        if (m_airStrafeBtn)    m_airStrafeBtn->setNormalImage(makeToggle("Air Strafe: ON","Air Strafe: OFF", g_airStrafe));
         if (m_ldmBtn)          m_ldmBtn->setNormalImage(makeToggle("LDM: ON","LDM: OFF", g_ldm));
         if (m_autoLDMBtn)      m_autoLDMBtn->setNormalImage(makeToggle("Auto LDM: ON","Auto LDM: OFF", g_autoLDM));
         if (m_spinbotBtn)      m_spinbotBtn->setNormalImage(makeToggle("Spinbot: ON","Spinbot: OFF", g_spinbot));
@@ -327,7 +322,6 @@ public:
 
         addBtn(m_jumpHackBtn, "Jump Hack: OFF", menu_selector(NeverloseMenu::onJumpHack), {cx + 60.f, cy + 130.f}, 0.55f, m_mainNodes);
         addBtn(m_noclipBtn,   "Noclip: OFF",    menu_selector(NeverloseMenu::onNoclip),   {cx + 60.f, cy + 130.f}, 0.55f, m_rageNodes);
-        addBtn(m_airStrafeBtn,"Air Strafe: OFF",menu_selector(NeverloseMenu::onAirStrafe),{cx + 60.f, cy + 60.f},  0.55f, m_rageNodes);
         addBtn(m_ldmBtn,      "LDM: OFF",       menu_selector(NeverloseMenu::onLDM),      {cx + 60.f, cy + 90.f},  0.55f, m_visualsNodes);
         addBtn(m_autoLDMBtn,  "Auto LDM: OFF",  menu_selector(NeverloseMenu::onAutoLDM),  {cx + 60.f, cy + 25.f},  0.55f, m_visualsNodes);
 
@@ -337,12 +331,12 @@ public:
             b->setPosition(pos); b->setScale(0.9f); mn->addChild(b); return b;
         };
 
-                addBtn(m_spinbotBtn, "Spinbot: OFF", menu_selector(NeverloseMenu::onSpinbot), {lx, cy + 150.f}, 0.55f, m_antiAimNodes);
+        addBtn(m_spinbotBtn, "Spinbot: OFF", menu_selector(NeverloseMenu::onSpinbot), {lx, cy + 150.f}, 0.55f, m_antiAimNodes);
         auto st = CCLabelBMFont::create("Spinbot Speed", "goldFont.fnt");
         st->setPosition({lx, cy + 105.f}); st->setScale(0.55f); st->setColor({0,200,255});
         this->addChild(st); m_antiAimNodes.push_back(st);
         m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
-        m_antiAimNodes.push_back(m_spinDown);
+                m_antiAimNodes.push_back(m_spinDown);
         m_spinValueBtn = CCMenuItemSpriteExtra::create(makeNumber(g_spinSpeed), this, menu_selector(NeverloseMenu::onSpinValue));
         m_spinValueBtn->setPosition({lx, cy + 65.f}); mn->addChild(m_spinValueBtn); m_antiAimNodes.push_back(m_spinValueBtn);
         m_spinUp = mkArrow("+", menu_selector(NeverloseMenu::onSpinUp), {lx + 70.f, cy + 65.f});
@@ -391,14 +385,12 @@ public:
         addBtn(m_glowCubeBtn, "Glow Cube: OFF",    menu_selector(NeverloseMenu::onGlowCube),  {cx + 60.f, cy + 215.f}, 0.55f, m_worldNodes);
         addBtn(m_cubeScaleBtn,"Cube Size: Normal", menu_selector(NeverloseMenu::onCubeScale), {cx + 60.f, cy + 280.f}, 0.55f, m_worldNodes);
 
-        // Footer с ником
         auto footer = CCLabelBMFont::create("Bulat | Neverlose", "bigFont.fnt");
         footer->setPosition({cx - 270.f, cy - 230.f});
         footer->setScale(0.42f);
         footer->setColor({150,150,160});
         this->addChild(footer);
 
-        // Save (декоративная кнопка как в NL)
         auto saveBg = CCScale9Sprite::create("GJ_square01.png");
         saveBg->setContentSize({80.f, 28.f});
         saveBg->setColor({30,30,40});
@@ -468,7 +460,6 @@ public:
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)   { g_noclip   = !g_noclip;   refreshButtons(); }
-    void onAirStrafe(CCObject*){ g_airStrafe= !g_airStrafe;refreshButtons(); }
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
     void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
@@ -673,4 +664,25 @@ class $modify(NLPlayerObject, PlayerObject) {
         }
 
         if (g_cubeScale == 0) this->setScale(0.7f);
+        else if (g_cubeScale == 2) this->setScale(1.4f);
+        else this->setScale(1.0f);
+
+        if (g_glowCube) {
+            this->setOpacity(200);
+            this->setColor({255, 200, 255});
+        }
+
+        if (g_shake) {
+            g_shakeTimer += dt;
+            if (g_shakeTimer >= 0.05f) {
+                g_shakeTimer = 0.f;
+                g_gravState = !g_gravState;
+                this->flipGravity(g_gravState, true);
+            }
+        }
+
+        if (g_nlGravite) {
+            g_nlGravPhase += dt;
+            if (g_nlGravPhase >= 0.10f) {
+                g_nlGravPhase = 0.f;
        
