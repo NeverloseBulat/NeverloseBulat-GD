@@ -24,11 +24,12 @@ static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_showFPS=false, g_unlockIcons=false, g_unlockVault=false,
             g_unlockColors=false, g_unlockLevels=false,
             g_showPercent=false, g_hidePlayer=false, g_slowMo=false,
-            g_fastMo=false, g_practiceMusic=false, g_noDeathEffect=false;
+            g_fastMo=false, g_practiceMusic=false, g_noDeathEffect=false,
+            g_airStrafe=false;
 
 static float g_speed = 1.0f, g_spinSpeed = 5.0f, g_shakeTimer = 0.0f,
              g_spinPhase = 0.0f, g_gravTimer = 0.0f,
-             g_nlGravPhase = 0.0f;
+             g_nlGravPhase = 0.0f, g_airStrafeSpeed = 1.0f;
 static bool  g_gravState = false;
 static bool  g_jumpHeld  = false;
 static int   g_clickCount = 0;
@@ -112,7 +113,7 @@ protected:
         *m_autoSafeModeBtn=nullptr, *m_cheatIndBtn=nullptr, *m_cpsBtn=nullptr,
         *m_timeBtn=nullptr, *m_fpsBtn=nullptr, *m_unlockIconsBtn=nullptr,
         *m_unlockVaultBtn=nullptr, *m_unlockColorsBtn=nullptr, *m_unlockLevelsBtn=nullptr,
-        *m_noclipBtn=nullptr, *m_ldmBtn=nullptr,
+        *m_noclipBtn=nullptr, *m_airStrafeBtn=nullptr, *m_ldmBtn=nullptr,
         *m_autoLDMBtn=nullptr, *m_spinbotBtn=nullptr, *m_shakeBtn=nullptr,
         *m_nlGraviteBtn=nullptr, *m_spinDown=nullptr, *m_spinUp=nullptr,
         *m_spinValueBtn=nullptr, *m_speedhackBtn=nullptr, *m_shDown=nullptr,
@@ -185,6 +186,7 @@ public:
     void refreshButtons() {
         if (m_jumpHackBtn)     m_jumpHackBtn->setNormalImage(makeToggle("Jump Hack: ON","Jump Hack: OFF", g_jumpHack));
         if (m_noclipBtn)       m_noclipBtn->setNormalImage(makeToggle("Noclip: ON","Noclip: OFF", g_noclip));
+        if (m_airStrafeBtn)    m_airStrafeBtn->setNormalImage(makeToggle("Air Strafe: ON","Air Strafe: OFF", g_airStrafe));
         if (m_ldmBtn)          m_ldmBtn->setNormalImage(makeToggle("LDM: ON","LDM: OFF", g_ldm));
         if (m_autoLDMBtn)      m_autoLDMBtn->setNormalImage(makeToggle("Auto LDM: ON","Auto LDM: OFF", g_autoLDM));
         if (m_spinbotBtn)      m_spinbotBtn->setNormalImage(makeToggle("Spinbot: ON","Spinbot: OFF", g_spinbot));
@@ -295,6 +297,7 @@ public:
 
         addBtn(m_jumpHackBtn, "Jump Hack: OFF", menu_selector(NeverloseMenu::onJumpHack), {cx + 60.f, cy + 130.f}, 0.55f, m_mainNodes);
         addBtn(m_noclipBtn,   "Noclip: OFF",    menu_selector(NeverloseMenu::onNoclip),   {cx + 60.f, cy + 130.f}, 0.55f, m_rageNodes);
+        addBtn(m_airStrafeBtn,"Air Strafe: OFF",menu_selector(NeverloseMenu::onAirStrafe),{cx + 60.f, cy + 60.f},  0.55f, m_rageNodes);
         addBtn(m_ldmBtn,      "LDM: OFF",       menu_selector(NeverloseMenu::onLDM),      {cx + 60.f, cy + 90.f},  0.55f, m_visualsNodes);
         addBtn(m_autoLDMBtn,  "Auto LDM: OFF",  menu_selector(NeverloseMenu::onAutoLDM),  {cx + 60.f, cy + 25.f},  0.55f, m_visualsNodes);
 
@@ -317,10 +320,10 @@ public:
         addBtn(m_aaEnabledBtn, "Anti-Aim: OFF", menu_selector(NeverloseMenu::onAAEnabled), {lx, cy + 5.f}, 0.55f, m_antiAimNodes);
         addBtn(m_aaFlipXBtn,   "Flip Back: OFF", menu_selector(NeverloseMenu::onAAFlipX), {lx, cy - 45.f}, 0.55f, m_antiAimNodes);
         addBtn(m_aaFlipYBtn,   "Flip Down: OFF", menu_selector(NeverloseMenu::onAAFlipY), {lx, cy - 95.f}, 0.55f, m_antiAimNodes);
-        addBtn(m_shakeBtn,     "Shake: OFF",     menu_selector(NeverloseMenu::onShake),   {rx, cy + 150.f}, 0.55f, m_antiAimNodes);
+                addBtn(m_shakeBtn,     "Shake: OFF",     menu_selector(NeverloseMenu::onShake),   {rx, cy + 150.f}, 0.55f, m_antiAimNodes);
         addBtn(m_nlGraviteBtn, "NL.exe Gravite: OFF", menu_selector(NeverloseMenu::onNLGravite), {rx, cy + 95.f}, 0.55f, m_antiAimNodes);
         addBtn(m_speedhackBtn, "Speedhack: OFF", menu_selector(NeverloseMenu::onSpeedhack), {rx, cy + 40.f}, 0.55f, m_antiAimNodes);
-                auto sht = CCLabelBMFont::create("Speedhack Value", "goldFont.fnt");
+        auto sht = CCLabelBMFont::create("Speedhack Value", "goldFont.fnt");
         sht->setPosition({rx, cy - 10.f}); sht->setScale(0.55f); sht->setColor({0,200,255});
         this->addChild(sht); m_antiAimNodes.push_back(sht);
         m_shDown = mkArrow("-", menu_selector(NeverloseMenu::onSpeedhackDown), {rx - 70.f, cy - 55.f});
@@ -406,6 +409,7 @@ public:
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)   { g_noclip   = !g_noclip;   refreshButtons(); }
+    void onAirStrafe(CCObject*){ g_airStrafe= !g_airStrafe;refreshButtons(); }
     void onLDM(CCObject*)      { g_ldm = !g_ldm;           refreshButtons(); }
     void onAutoLDM(CCObject*)  { g_autoLDM = !g_autoLDM;   refreshButtons(); }
     void onSpinbot(CCObject*)  { g_spinbot = !g_spinbot;   refreshButtons(); }
@@ -515,6 +519,11 @@ class $modify(NLPlayLayer, PlayLayer) {
         return true;
     }
 
+    void handleButton(bool down, int button, bool isPlayer1) override {
+        PlayLayer::handleButton(down, button, isPlayer1);
+        if (button == 1) g_jumpHeld = down;
+    }
+
     void update(float dt) override {
         PlayLayer::update(dt);
         auto f = m_fields.self();
@@ -595,29 +604,31 @@ class $modify(NLPauseLayer, PauseLayer) {
 //                   PLAYEROBJECT HOOK
 // ============================================================
 class $modify(NLPlayerObject, PlayerObject) {
-    void pushButton(PlayerButton button) override {
-        PlayerObject::pushButton(button);
-        if (button == PlayerButton::Jump) g_jumpHeld = true;
-    }
-    void releaseButton(PlayerButton button) override {
-        PlayerObject::releaseButton(button);
-        if (button == PlayerButton::Jump) g_jumpHeld = false;
-    }
-
     void update(float dt) override {
         PlayerObject::update(dt);
 
+        // Spinbot
         if (g_spinbot) {
             g_spinPhase += g_spinSpeed * 60.f * dt;
             if (g_spinPhase > 100000.f) g_spinPhase -= 100000.f;
             this->setRotation(g_spinPhase);
         }
+
+        // Anti-Aim
         if (g_aaEnabled) {
             if (g_aaFlipX) this->setScaleX(-1.0f);
             if (g_aaFlipY) this->setScaleY(-1.0f);
         }
 
-        // Shake: пока зажат прыжок — флипаем гравитацию
+        // Air Strafe
+        if (g_airStrafe && !this->m_isOnGround) {
+            if (this->m_platformerXVelocity != 0.f) {
+                float addX = this->m_platformerXVelocity * g_airStrafeSpeed * 0.15f;
+                this->setPositionX(this->getPositionX() + addX * dt);
+            }
+        }
+
+        // Shake — пока зажат прыжок, флипаем гравитацию
         if (g_shake && g_jumpHeld) {
             g_shakeTimer += dt;
             if (g_shakeTimer >= 0.05f) {
@@ -627,7 +638,7 @@ class $modify(NLPlayerObject, PlayerObject) {
             }
         }
 
-        // NL Gravite: куб мгновенно вверх-ногами
+        // NL Gravite — мгновенный поворот
         if (g_nlGravite) {
             g_nlGravPhase += dt;
             if (g_nlGravPhase >= 0.10f) {
