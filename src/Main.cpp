@@ -137,6 +137,8 @@ protected:
     CCScale9Sprite* m_sidePanel = nullptr;
     CCLayerColor*   m_darkOverlay = nullptr;
     CCLabelBMFont*  m_brandLabel = nullptr;
+    std::vector<CCScale9Sprite*> m_tabBgs;
+    std::vector<CCLabelBMFont*>  m_tabLabels;
 
     bool m_dragging = false;
     bool m_closing  = false;
@@ -250,15 +252,16 @@ public:
         for (auto n : m_qolNodes)       if (n) n->setVisible(p == 7);
         for (auto n : m_worldNodes)     if (n) n->setVisible(p == 8);
 
-        if (m_tabMain)      m_tabMain->setColor(p == 0 ? ccWHITE : ccGRAY);
-        if (m_tabRage)      m_tabRage->setColor(p == 1 ? ccWHITE : ccGRAY);
-        if (m_tabVisuals)   m_tabVisuals->setColor(p == 2 ? ccWHITE : ccGRAY);
-        if (m_tabAntiAim)   m_tabAntiAim->setColor(p == 3 ? ccWHITE : ccGRAY);
-        if (m_tabCreate)    m_tabCreate->setColor(p == 4 ? ccWHITE : ccGRAY);
-        if (m_tabLegit)     m_tabLegit->setColor(p == 5 ? ccWHITE : ccGRAY);
-        if (m_tabCosmetics) m_tabCosmetics->setColor(p == 6 ? ccWHITE : ccGRAY);
-        if (m_tabQOL)       m_tabQOL->setColor(p == 7 ? ccWHITE : ccGRAY);
-        if (m_tabWorld)     m_tabWorld->setColor(p == 8 ? ccWHITE : ccGRAY);
+        ccColor3B activeBg   = {50, 90, 200};
+        ccColor3B inactiveBg = {28, 28, 35};
+        ccColor3B activeLbl  = {255, 255, 255};
+        ccColor3B inactiveLbl= {170, 170, 180};
+        for (size_t i = 0; i < m_tabBgs.size(); i++) {
+            bool act = (i == (size_t)p);
+            if (m_tabBgs[i]) m_tabBgs[i]->setColor(act ? activeBg : inactiveBg);
+            if (i < m_tabLabels.size() && m_tabLabels[i])
+                m_tabLabels[i]->setColor(act ? activeLbl : inactiveLbl);
+        }
     }
 
     bool init() override {
@@ -276,8 +279,10 @@ public:
         m_sidePanel->setContentSize({220.f, 500.f}); m_sidePanel->setPosition({cx - 270.f, cy});
         m_sidePanel->setColor({25,25,30}); this->addChild(m_sidePanel);
 
-        m_brandLabel = CCLabelBMFont::create("NEVERLOSE", "goldFont.fnt");
-        m_brandLabel->setPosition({cx - 270.f, cy + 225.f}); m_brandLabel->setScale(0.6f);
+        m_brandLabel = CCLabelBMFont::create("NEVERLOSE", "bigFont.fnt");
+        m_brandLabel->setPosition({cx - 270.f, cy + 225.f});
+        m_brandLabel->setScale(0.9f);
+        m_brandLabel->setColor({255,255,255});
         this->addChild(m_brandLabel);
 
         auto mn = CCMenu::create(); mn->setPosition({0,0}); this->addChild(mn);
@@ -289,8 +294,21 @@ public:
         float ty[9] = {cy + 145.f, cy + 112.f, cy + 79.f, cy + 46.f, cy + 13.f,
                         cy - 20.f, cy - 53.f, cy - 86.f, cy - 119.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
-            auto b = CCMenuItemSpriteExtra::create(ButtonSprite::create(t), this, cb_);
-            b->setPosition({cx - 270.f, y}); b->setScale(0.45f); mn->addChild(b); return b;
+            auto bg = CCScale9Sprite::create("GJ_square01.png");
+            bg->setContentSize({200.f, 32.f});
+            bg->setColor({28,28,35});
+            auto b = CCMenuItemSpriteExtra::create(bg, this, cb_);
+            b->setPosition({cx - 270.f, y});
+            mn->addChild(b);
+            m_tabBgs.push_back(bg);
+
+            auto lbl = CCLabelBMFont::create(t, "bigFont.fnt");
+            lbl->setPosition({cx - 270.f, y});
+            lbl->setScale(0.55f);
+            lbl->setColor({170,170,180});
+            this->addChild(lbl);
+            m_tabLabels.push_back(lbl);
+            return b;
         };
         m_tabMain      = mkTab("Main",      menu_selector(NeverloseMenu::onTabMain),      ty[0]);
         m_tabRage      = mkTab("Rage",      menu_selector(NeverloseMenu::onTabRage),      ty[1]);
@@ -319,11 +337,11 @@ public:
             b->setPosition(pos); b->setScale(0.9f); mn->addChild(b); return b;
         };
 
-        addBtn(m_spinbotBtn, "Spinbot: OFF", menu_selector(NeverloseMenu::onSpinbot), {lx, cy + 150.f}, 0.55f, m_antiAimNodes);
+                addBtn(m_spinbotBtn, "Spinbot: OFF", menu_selector(NeverloseMenu::onSpinbot), {lx, cy + 150.f}, 0.55f, m_antiAimNodes);
         auto st = CCLabelBMFont::create("Spinbot Speed", "goldFont.fnt");
         st->setPosition({lx, cy + 105.f}); st->setScale(0.55f); st->setColor({0,200,255});
         this->addChild(st); m_antiAimNodes.push_back(st);
-                m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
+        m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
         m_antiAimNodes.push_back(m_spinDown);
         m_spinValueBtn = CCMenuItemSpriteExtra::create(makeNumber(g_spinSpeed), this, menu_selector(NeverloseMenu::onSpinValue));
         m_spinValueBtn->setPosition({lx, cy + 65.f}); mn->addChild(m_spinValueBtn); m_antiAimNodes.push_back(m_spinValueBtn);
@@ -373,6 +391,25 @@ public:
         addBtn(m_glowCubeBtn, "Glow Cube: OFF",    menu_selector(NeverloseMenu::onGlowCube),  {cx + 60.f, cy + 215.f}, 0.55f, m_worldNodes);
         addBtn(m_cubeScaleBtn,"Cube Size: Normal", menu_selector(NeverloseMenu::onCubeScale), {cx + 60.f, cy + 280.f}, 0.55f, m_worldNodes);
 
+        // Footer с ником
+        auto footer = CCLabelBMFont::create("Bulat | Neverlose", "bigFont.fnt");
+        footer->setPosition({cx - 270.f, cy - 230.f});
+        footer->setScale(0.42f);
+        footer->setColor({150,150,160});
+        this->addChild(footer);
+
+        // Save (декоративная кнопка как в NL)
+        auto saveBg = CCScale9Sprite::create("GJ_square01.png");
+        saveBg->setContentSize({80.f, 28.f});
+        saveBg->setColor({30,30,40});
+        auto saveBtn = CCMenuItemSpriteExtra::create(saveBg, this, menu_selector(NeverloseMenu::onSave));
+        saveBtn->setPosition({cx + 280.f, cy + 235.f});
+        mn->addChild(saveBtn);
+        auto saveLbl = CCLabelBMFont::create("Save", "bigFont.fnt");
+        saveLbl->setPosition({cx + 280.f, cy + 235.f});
+        saveLbl->setScale(0.5f);
+        this->addChild(saveLbl);
+
         setPage(0);
         refreshButtons();
         refreshWorld();
@@ -416,6 +453,8 @@ public:
     void onTabCosmetics(CCObject*) { setPage(6); }
     void onTabQOL(CCObject*)       { setPage(7); }
     void onTabWorld(CCObject*)     { setPage(8); }
+
+    void onSave(CCObject*) {}
 
     void onTheme(CCObject*)    { g_menuTheme = (g_menuTheme + 1) % 6; applyTheme(); refreshWorld(); }
     void onOpacity(CCObject*)  { g_menuOpacity = (g_menuOpacity + 1) % 3; applyTheme(); refreshWorld(); }
@@ -634,41 +673,4 @@ class $modify(NLPlayerObject, PlayerObject) {
         }
 
         if (g_cubeScale == 0) this->setScale(0.7f);
-        else if (g_cubeScale == 2) this->setScale(1.4f);
-        else this->setScale(1.0f);
-
-        if (g_glowCube) {
-            this->setOpacity(200);
-            this->setColor({255, 200, 255});
-        }
-
-        if (g_shake) {
-            g_shakeTimer += dt;
-            if (g_shakeTimer >= 0.05f) {
-                g_shakeTimer = 0.f;
-                g_gravState = !g_gravState;
-                this->flipGravity(g_gravState, true);
-            }
-        }
-
-        if (g_nlGravite) {
-            g_nlGravPhase += dt;
-            if (g_nlGravPhase >= 0.10f) {
-                g_nlGravPhase = 0.f;
-                g_gravState = !g_gravState;
-                this->setRotation(g_gravState ? 180.f : 0.f);
-            }
-        }
-    }
-};
-
-// ============================================================
-//                  LEVELINFOLAYER HOOK
-// ============================================================
-class $modify(NLLevelInfoLayer, LevelInfoLayer) {
-    void onPlay(CCObject* sender) { LevelInfoLayer::onPlay(sender); }
-};
-
-$execute {
-    std::srand(static_cast<unsigned>(std::time(nullptr)));
-}
+       
