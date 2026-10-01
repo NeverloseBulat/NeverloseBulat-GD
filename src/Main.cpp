@@ -15,6 +15,11 @@ static int   g_menuOpacity  = 2;
 static int   g_menuScale    = 1;
 static bool  g_hideBranding = false;
 static bool  g_blurEffect   = false;
+static bool  g_rainbowMode  = false;
+static bool  g_glowCube     = false;
+static int   g_cubeScale    = 1;
+static float g_rainbowTimer = 0.f;
+static int   g_rainbowPhase = 0;
 
 static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
@@ -124,7 +129,9 @@ protected:
         *m_tabAntiAim=nullptr, *m_tabCreate=nullptr, *m_tabLegit=nullptr,
         *m_tabCosmetics=nullptr, *m_tabQOL=nullptr, *m_tabWorld=nullptr;
     CCMenuItemSpriteExtra *m_colorBtn=nullptr, *m_opacityBtn=nullptr,
-        *m_scaleBtn=nullptr, *m_brandingBtn=nullptr, *m_blurBtn=nullptr;
+        *m_scaleBtn=nullptr, *m_brandingBtn=nullptr, *m_blurBtn=nullptr,
+        *m_colorAllBtn=nullptr, *m_rainbowBtn=nullptr,
+        *m_glowCubeBtn=nullptr, *m_cubeScaleBtn=nullptr;
 
     CCScale9Sprite* m_mainPanel = nullptr;
     CCScale9Sprite* m_sidePanel = nullptr;
@@ -174,12 +181,18 @@ public:
     void refreshWorld() {
         const char* colors[6] = {"Dark","Blue","Red","Green","Purple","Gold"};
         const char* opac[3]   = {"50%","75%","100%"};
-        const char* scales[3] = {"Small","Medium","Large"};
+        const char* mscales[3]= {"Small","Medium","Large"};
+        const char* cscales[3]= {"Small","Normal","Big"};
+        const char* cnames[6] = {"Default","Pink","Blue","Red","Green","Purple"};
         if (m_colorBtn)    m_colorBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Color: %s", colors[g_menuTheme])->getCString()));
         if (m_opacityBtn)  m_opacityBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Opacity: %s", opac[g_menuOpacity])->getCString()));
-        if (m_scaleBtn)    m_scaleBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Scale: %s", scales[g_menuScale])->getCString()));
+        if (m_scaleBtn)    m_scaleBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Scale: %s", mscales[g_menuScale])->getCString()));
         if (m_brandingBtn) m_brandingBtn->setNormalImage(ButtonSprite::create(g_hideBranding ? "Branding: Hide" : "Branding: Show"));
         if (m_blurBtn)     m_blurBtn->setNormalImage(ButtonSprite::create(g_blurEffect ? "Blur BG: ON" : "Blur BG: OFF"));
+        if (m_glowCubeBtn) m_glowCubeBtn->setNormalImage(ButtonSprite::create(g_glowCube ? "Glow Cube: ON" : "Glow Cube: OFF"));
+        if (m_rainbowBtn)  m_rainbowBtn->setNormalImage(ButtonSprite::create(g_rainbowMode ? "Rainbow: ON" : "Rainbow: OFF"));
+        if (m_cubeScaleBtn)m_cubeScaleBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Cube Size: %s", cscales[g_cubeScale])->getCString()));
+        if (m_colorAllBtn) m_colorAllBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Color All: %s", cnames[g_menuTheme])->getCString()));
     }
 
     void refreshButtons() {
@@ -310,7 +323,7 @@ public:
         auto st = CCLabelBMFont::create("Spinbot Speed", "goldFont.fnt");
         st->setPosition({lx, cy + 105.f}); st->setScale(0.55f); st->setColor({0,200,255});
         this->addChild(st); m_antiAimNodes.push_back(st);
-        m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
+                m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
         m_antiAimNodes.push_back(m_spinDown);
         m_spinValueBtn = CCMenuItemSpriteExtra::create(makeNumber(g_spinSpeed), this, menu_selector(NeverloseMenu::onSpinValue));
         m_spinValueBtn->setPosition({lx, cy + 65.f}); mn->addChild(m_spinValueBtn); m_antiAimNodes.push_back(m_spinValueBtn);
@@ -319,7 +332,7 @@ public:
         addBtn(m_aaEnabledBtn, "Anti-Aim: OFF", menu_selector(NeverloseMenu::onAAEnabled), {lx, cy + 5.f}, 0.55f, m_antiAimNodes);
         addBtn(m_aaFlipXBtn,   "Flip Back: OFF", menu_selector(NeverloseMenu::onAAFlipX), {lx, cy - 45.f}, 0.55f, m_antiAimNodes);
         addBtn(m_aaFlipYBtn,   "Flip Down: OFF", menu_selector(NeverloseMenu::onAAFlipY), {lx, cy - 95.f}, 0.55f, m_antiAimNodes);
-                addBtn(m_shakeBtn,     "Shake: OFF",     menu_selector(NeverloseMenu::onShake),   {rx, cy + 150.f}, 0.55f, m_antiAimNodes);
+        addBtn(m_shakeBtn,     "Shake: OFF",     menu_selector(NeverloseMenu::onShake),   {rx, cy + 150.f}, 0.55f, m_antiAimNodes);
         addBtn(m_nlGraviteBtn, "NL.exe Gravite: OFF", menu_selector(NeverloseMenu::onNLGravite), {rx, cy + 95.f}, 0.55f, m_antiAimNodes);
         addBtn(m_speedhackBtn, "Speedhack: OFF", menu_selector(NeverloseMenu::onSpeedhack), {rx, cy + 40.f}, 0.55f, m_antiAimNodes);
         auto sht = CCLabelBMFont::create("Speedhack Value", "goldFont.fnt");
@@ -355,6 +368,10 @@ public:
         addBtn(m_scaleBtn,    "Scale: Medium",   menu_selector(NeverloseMenu::onScale),    {cx + 60.f, cy + 20.f},  0.55f, m_worldNodes);
         addBtn(m_brandingBtn, "Branding: Show",  menu_selector(NeverloseMenu::onBranding), {cx + 60.f, cy - 45.f},  0.55f, m_worldNodes);
         addBtn(m_blurBtn,     "Blur BG: OFF",    menu_selector(NeverloseMenu::onBlur),     {cx + 60.f, cy - 110.f}, 0.55f, m_worldNodes);
+        addBtn(m_colorAllBtn, "Color All: Default",menu_selector(NeverloseMenu::onColorAll),  {cx + 60.f, cy - 175.f}, 0.55f, m_worldNodes);
+        addBtn(m_rainbowBtn,  "Rainbow: OFF",      menu_selector(NeverloseMenu::onRainbow),   {cx + 60.f, cy - 240.f}, 0.55f, m_worldNodes);
+        addBtn(m_glowCubeBtn, "Glow Cube: OFF",    menu_selector(NeverloseMenu::onGlowCube),  {cx + 60.f, cy + 215.f}, 0.55f, m_worldNodes);
+        addBtn(m_cubeScaleBtn,"Cube Size: Normal", menu_selector(NeverloseMenu::onCubeScale), {cx + 60.f, cy + 280.f}, 0.55f, m_worldNodes);
 
         setPage(0);
         refreshButtons();
@@ -405,6 +422,10 @@ public:
     void onScale(CCObject*)    { g_menuScale = (g_menuScale + 1) % 3; applyTheme(); refreshWorld(); }
     void onBranding(CCObject*) { g_hideBranding = !g_hideBranding; applyTheme(); refreshWorld(); }
     void onBlur(CCObject*)     { g_blurEffect = !g_blurEffect; applyTheme(); refreshWorld(); }
+    void onColorAll(CCObject*) { g_menuTheme = (g_menuTheme + 1) % 6; applyTheme(); refreshWorld(); }
+    void onRainbow(CCObject*)  { g_rainbowMode = !g_rainbowMode; refreshWorld(); }
+    void onGlowCube(CCObject*) { g_glowCube    = !g_glowCube;    refreshWorld(); }
+    void onCubeScale(CCObject*){ g_cubeScale   = (g_cubeScale + 1) % 3; refreshWorld(); }
 
     void onJumpHack(CCObject*) { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)   { g_noclip   = !g_noclip;   refreshButtons(); }
@@ -612,11 +633,13 @@ class $modify(NLPlayerObject, PlayerObject) {
             if (g_aaFlipY) this->setScaleY(-1.0f);
         }
 
-        if (g_airStrafe && !this->m_isOnGround) {
-            if (this->m_platformerXVelocity != 0.f) {
-                float addX = this->m_platformerXVelocity * g_airStrafeSpeed * 0.15f;
-                this->setPositionX(this->getPositionX() + addX * dt);
-            }
+        if (g_cubeScale == 0) this->setScale(0.7f);
+        else if (g_cubeScale == 2) this->setScale(1.4f);
+        else this->setScale(1.0f);
+
+        if (g_glowCube) {
+            this->setOpacity(200);
+            this->setColor({255, 200, 255});
         }
 
         if (g_shake) {
@@ -649,4 +672,3 @@ class $modify(NLLevelInfoLayer, LevelInfoLayer) {
 $execute {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 }
-  
