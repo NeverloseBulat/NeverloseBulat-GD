@@ -41,9 +41,6 @@ static ButtonSprite* makeNumber(float v) {
     return ButtonSprite::create(CCString::createWithFormat("%.2f", v)->getCString());
 }
 
-// ============================================================
-//                    VALUE INPUT POPUP
-// ============================================================
 class ValueInputPopup : public CCLayer {
 protected:
     bool m_isSpeed = true;
@@ -101,9 +98,6 @@ public:
     void keyBackClicked()    { this->removeFromParentAndCleanup(true); }
 };
 
-// ============================================================
-//                       NEVERLOSE MENU
-// ============================================================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
@@ -336,10 +330,10 @@ public:
         st->setPosition({lx, cy + 105.f}); st->setScale(0.55f); st->setColor({0,200,255});
         this->addChild(st); m_antiAimNodes.push_back(st);
         m_spinDown = mkArrow("-", menu_selector(NeverloseMenu::onSpinDown), {lx - 70.f, cy + 65.f});
-                m_antiAimNodes.push_back(m_spinDown);
+        m_antiAimNodes.push_back(m_spinDown);
         m_spinValueBtn = CCMenuItemSpriteExtra::create(makeNumber(g_spinSpeed), this, menu_selector(NeverloseMenu::onSpinValue));
         m_spinValueBtn->setPosition({lx, cy + 65.f}); mn->addChild(m_spinValueBtn); m_antiAimNodes.push_back(m_spinValueBtn);
-        m_spinUp = mkArrow("+", menu_selector(NeverloseMenu::onSpinUp), {lx + 70.f, cy + 65.f});
+                m_spinUp = mkArrow("+", menu_selector(NeverloseMenu::onSpinUp), {lx + 70.f, cy + 65.f});
         m_antiAimNodes.push_back(m_spinUp);
         addBtn(m_aaEnabledBtn, "Anti-Aim: OFF", menu_selector(NeverloseMenu::onAAEnabled), {lx, cy + 5.f}, 0.55f, m_antiAimNodes);
         addBtn(m_aaFlipXBtn,   "Flip Back: OFF", menu_selector(NeverloseMenu::onAAFlipX), {lx, cy - 45.f}, 0.55f, m_antiAimNodes);
@@ -525,9 +519,6 @@ public:
     void keyBackClicked() { this->onClose(nullptr); }
 };
 
-// ============================================================
-//                     PLAYLAYER HOOK
-// ============================================================
 class $modify(NLPlayLayer, PlayLayer) {
     struct Fields {
         CCLabelBMFont* cpsLabel    = nullptr;
@@ -622,9 +613,6 @@ class $modify(NLPlayLayer, PlayLayer) {
     }
 };
 
-// ============================================================
-//                     PAUSELAYER HOOK
-// ============================================================
 class $modify(NLPauseLayer, PauseLayer) {
     void customSetup() {
         PauseLayer::customSetup();
@@ -645,9 +633,6 @@ class $modify(NLPauseLayer, PauseLayer) {
     }
 };
 
-// ============================================================
-//                   PLAYEROBJECT HOOK
-// ============================================================
 class $modify(NLPlayerObject, PlayerObject) {
     void update(float dt) override {
         PlayerObject::update(dt);
@@ -685,4 +670,17 @@ class $modify(NLPlayerObject, PlayerObject) {
             g_nlGravPhase += dt;
             if (g_nlGravPhase >= 0.10f) {
                 g_nlGravPhase = 0.f;
-       
+                g_gravState = !g_gravState;
+                this->setRotation(g_gravState ? 180.f : 0.f);
+            }
+        }
+    }
+};
+
+class $modify(NLLevelInfoLayer, LevelInfoLayer) {
+    void onPlay(CCObject* sender) { LevelInfoLayer::onPlay(sender); }
+};
+
+$execute {
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
+}
