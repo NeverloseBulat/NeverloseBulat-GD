@@ -10,7 +10,6 @@
 
 using namespace geode::prelude;
 
-// --- Menu settings ---
 static int   g_menuTheme    = 0;
 static int   g_menuOpacity  = 2;
 static int   g_menuScale    = 1;
@@ -20,7 +19,6 @@ static bool  g_rainbowMode  = false;
 static bool  g_glowCube     = false;
 static int   g_cubeScale    = 1;
 
-// --- Feature flags ---
 static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_nlGravite=false, g_ldm=false, g_autoLDM=false, g_speedhack=false,
             g_jumpHack=false, g_copyHack=false, g_autoSafeMode=false,
@@ -47,9 +45,6 @@ static ButtonSprite* makeNumber(float v) {
     return ButtonSprite::create(CCString::createWithFormat("%.2f", v)->getCString());
 }
 
-// ============================================================
-//                    VALUE INPUT POPUP
-// ============================================================
 class ValueInputPopup : public CCLayer {
 protected:
     bool m_isSpeed = true;
@@ -107,9 +102,6 @@ public:
     void keyBackClicked()    { this->removeFromParentAndCleanup(true); }
 };
 
-// ============================================================
-//                       NEVERLOSE MENU
-// ============================================================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
@@ -311,7 +303,7 @@ public:
                         cy - 20.f, cy - 53.f, cy - 86.f, cy - 119.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
             auto bg = CCScale9Sprite::create("GJ_square01.png");
-            bg->setContentSize({200.f, 32.f});
+            bg->se
             bg->setColor({28,28,35});
             auto b = CCMenuItemSpriteExtra::create(bg, this, cb_);
             b->setPosition({cx - 270.f, y});
@@ -332,11 +324,11 @@ public:
         m_tabAntiAim   = mkTab("Anti-Aim",  menu_selector(NeverloseMenu::onTabAntiAim),   ty[3]);
         m_tabCreate    = mkTab("Create",    menu_selector(NeverloseMenu::onTabCreate),    ty[4]);
         m_tabLegit     = mkTab("Legit",     menu_selector(NeverloseMenu::onTabLegit),     ty[5]);
-                m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
+        m_tabCosmetics = mkTab("Cosmetics", menu_selector(NeverloseMenu::onTabCosmetics), ty[6]);
         m_tabQOL       = mkTab("QOL",       menu_selector(NeverloseMenu::onTabQOL),       ty[7]);
         m_tabWorld     = mkTab("NL.World",  menu_selector(NeverloseMenu::onTabWorld),     ty[8]);
 
-        auto addBtn = [&](CCMenuItemSpriteExtra*& btn, const char* txt, cocos2d::SEL_MenuHandler cb, CCPoint pos, float sc, std::vector<CCNode*>& vec) {
+                auto addBtn = [&](CCMenuItemSpriteExtra*& btn, const char* txt, cocos2d::SEL_MenuHandler cb, CCPoint pos, float sc, std::vector<CCNode*>& vec) {
             btn = CCMenuItemSpriteExtra::create(ButtonSprite::create(txt), this, cb);
             btn->setPosition(pos); btn->setScale(sc); mn->addChild(btn); vec.push_back(btn);
         };
@@ -606,4 +598,17 @@ class $modify(NLPlayLayer, PlayLayer) {
         }
         if (g_showPercent) {
             f->percentLabel = CCLabelBMFont::create("0%", "bigFont.fnt");
-            if (f->percentLabel) { f->percentLabel->setScale(0.5f); f->percentLabel->setPosition({ws.width - 60.f, ws.height - 60.f}); f->percentLabel->setColor({
+            if (f->percentLabel) { f->percentLabel->setScale(0.5f); f->percentLabel->setPosition({ws.width - 60.f, ws.height - 60.f}); f->percentLabel->setColor({255,255,0}); this->addChild(f->percentLabel, 100); }
+        }
+        return true;
+    }
+
+    void update(float dt) override {
+        PlayLayer::update(dt);
+        auto f = m_fields.self();
+        if (!f) return;
+
+        auto player = m_player1;
+        if (player) {
+            if (g_jump
+        
