@@ -43,9 +43,6 @@ static ButtonSprite* makeNumber(float v) {
     return ButtonSprite::create(CCString::createWithFormat("%.2f", v)->getCString());
 }
 
-// ============================================================
-//                    VALUE INPUT POPUP
-// ============================================================
 class ValueInputPopup : public CCLayer {
 protected:
     bool m_isSpeed = true;
@@ -102,9 +99,6 @@ public:
     void keyBackClicked()    { this->removeFromParentAndCleanup(true); }
 };
 
-// ============================================================
-//                    CUBE SIZE POPUP
-// ============================================================
 class CubeSizePopup : public CCLayer {
 public:
     static CubeSizePopup* create() {
@@ -153,7 +147,6 @@ public:
     void keyBackClicked()   { this->removeFromParentAndCleanup(true); }
 };
 
-// ==== static labels ====
 static CCLabelBMFont* s_cpsLabel     = nullptr;
 static CCLabelBMFont* s_timeLabel    = nullptr;
 static CCLabelBMFont* s_fpsLabel     = nullptr;
@@ -164,9 +157,6 @@ static int   s_frameCount = 0;
 static float s_fpsTimer   = 0.f;
 static float s_cpsTimer   = 0.f;
 
-// ============================================================
-//                       NEVERLOSE MENU
-// ============================================================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
@@ -202,7 +192,6 @@ protected:
     std::vector<CCLabelBMFont*>  m_tabLabels;
     bool m_dragging = false;
     bool m_closing  = false;
-    CCPoint m_dragStart = {0,0};
     int m_curPage = 0;
 
 public:
@@ -350,7 +339,7 @@ public:
         for (auto n : m_antiAimNodes) if (n) n->setVisible(p == 3);
         for (auto n : m_createNodes)  if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)   if (n) n->setVisible(p == 5);
-                for (auto n : m_qolNodes)     if (n) n->setVisible(p == 6);
+        for (auto n : m_qolNodes)     if (n) n->setVisible(p == 6);
         for (auto n : m_worldNodes)   if (n) n->setVisible(p == 7);
 
         ccColor3B aBg = {50, 90, 200}, iBg = {28,28,35};
@@ -363,7 +352,7 @@ public:
     }
 
     bool init() override {
-        if (!CCLayer::init()) return false;
+                if (!CCLayer::init()) return false;
         auto ws = CCDirector::get()->getWinSize();
         float cx = ws.width / 2.f, cy = ws.height / 2.f;
 
@@ -620,3 +609,17 @@ class $modify(NLPlayLayer, PlayLayer) {
 
         if (s_cpsLabel)   s_cpsLabel->setVisible(g_showCPS);
         if (s_timeLabel)  s_timeLabel->setVisible(g_showTime);
+        if (s_fpsLabel)   s_fpsLabel->setVisible(g_showFPS);
+        if (s_cheatLabel) s_cheatLabel->setVisible(g_cheatIndicator);
+        if (s_percentLabel) s_percentLabel->setVisible(g_showPercent);
+
+        auto player = m_player1;
+        if (player) {
+            if (g_jumpHack) player->pushButton(PlayerButton::Jump);
+            player->setVisible(!g_hidePlayer);
+
+            if (g_instantComplete) {
+                float endX = 10000.f;
+                if (this->m_level) {
+                    endX = this->m_level->m_levelLength * 30.f;
+                  
