@@ -19,7 +19,13 @@ static bool g_noclip=false, g_spinbot=false, g_shake=false,
             g_glowCube=false, g_hideAttempts=false, g_autoRetry=false, g_godMode=false,
             g_instantComplete=false, g_noSpikes=false, g_cheatIndicator=false;
 
-static float g_speed=1.0f, g_spinSpeed=5.0f, g_shakeTimer=0.0f, g_spinPhase=0.0f, g_nlGravPhase=0.0f;
+static int   g_menuTheme    = 0;
+static int   g_menuOpacity  = 2;
+static bool  g_hideBranding = false;
+static int   g_cubeScale    = 1;
+
+static float g_speed=1.0f, g_spinSpeed=5.0f, g_shakeTimer=0.0f,
+             g_spinPhase=0.0f, g_nlGravPhase=0.0f;
 static bool  g_gravState=false;
 static int   g_clickCount=0;
 
@@ -30,6 +36,9 @@ static ButtonSprite* makeNumber(float v) {
     return ButtonSprite::create(CCString::createWithFormat("%.2f", v)->getCString());
 }
 
+// ============================================================
+//                    VALUE INPUT POPUP
+// ============================================================
 class ValueInputPopup : public CCLayer {
 protected:
     bool m_isSpeed = true;
@@ -87,20 +96,23 @@ public:
 };
 
 // ==== static labels (без struct Fields) ====
-static CCLabelBMFont* s_cpsLabel   = nullptr;
-static CCLabelBMFont* s_timeLabel  = nullptr;
-static CCLabelBMFont* s_fpsLabel   = nullptr;
-static CCLabelBMFont* s_cheatLabel = nullptr;
+static CCLabelBMFont* s_cpsLabel     = nullptr;
+static CCLabelBMFont* s_timeLabel    = nullptr;
+static CCLabelBMFont* s_fpsLabel     = nullptr;
+static CCLabelBMFont* s_cheatLabel   = nullptr;
 static CCLabelBMFont* s_percentLabel = nullptr;
 static float s_timeAlive  = 0.f;
 static int   s_frameCount = 0;
 static float s_fpsTimer   = 0.f;
 static float s_cpsTimer   = 0.f;
 
+// ============================================================
+//                       NEVERLOSE MENU
+// ============================================================
 class NeverloseMenu : public CCLayer {
 protected:
     std::vector<CCNode*> m_mainNodes, m_rageNodes, m_visualsNodes, m_antiAimNodes,
-                         m_createNodes, m_legitNodes, m_qolNodes;
+                         m_createNodes, m_legitNodes, m_qolNodes, m_worldNodes;
     CCMenuItemSpriteExtra *m_jumpHackBtn=nullptr,*m_noclipBtn=nullptr,*m_ldmBtn=nullptr,
         *m_autoLDMBtn=nullptr,*m_spinbotBtn=nullptr,*m_shakeBtn=nullptr,
         *m_nlGraviteBtn=nullptr,*m_spinDown=nullptr,*m_spinUp=nullptr,
@@ -115,8 +127,11 @@ protected:
         *m_autoRetryBtn=nullptr,*m_godModeBtn=nullptr,
         *m_cheatIndBtn=nullptr,*m_cpsBtn=nullptr,*m_timeBtn=nullptr,*m_fpsBtn=nullptr,
         *m_copyHackBtn=nullptr,
+        *m_colorBtn=nullptr,*m_opacityBtn=nullptr,*m_brandingBtn=nullptr,
+        *m_glowCubeBtn=nullptr,*m_cubeScaleBtn=nullptr,
         *m_tabMain=nullptr,*m_tabRage=nullptr,*m_tabVisuals=nullptr,
-        *m_tabAntiAim=nullptr,*m_tabCreate=nullptr,*m_tabLegit=nullptr,*m_tabQOL=nullptr;
+        *m_tabAntiAim=nullptr,*m_tabCreate=nullptr,*m_tabLegit=nullptr,
+        *m_tabQOL=nullptr,*m_tabWorld=nullptr;
 
     CCScale9Sprite* m_mainPanel = nullptr;
     CCScale9Sprite* m_sidePanel = nullptr;
@@ -137,6 +152,32 @@ public:
         delete r; return nullptr;
     }
 
+    void applyColorTheme() {
+        ccColor3B c;
+        switch (g_menuTheme) {
+            case 0: c = {15,15,15};  break;
+            case 1: c = {20,30,60};  break;
+            case 2: c = {60,15,15};  break;
+            case 3: c = {15,50,20};  break;
+            case 4: c = {45,15,60};  break;
+            default: c = {55,45,10}; break;
+        }
+        if (m_mainPanel) m_mainPanel->setColor(c);
+        if (m_sidePanel) {
+            GLubyte r = c.r + 10 > 255 ? 255 : c.r + 10;
+            GLubyte g = c.g + 10 > 255 ? 255 : c.g + 10;
+            GLubyte b = c.b + 15 > 255 ? 255 : c.b + 15;
+            m_sidePanel->setColor({r, g, b});
+        }
+        if (m_darkOverlay) {
+            GLubyte a = 180;
+            if (g_menuOpacity == 0) a = 90;
+            else if (g_menuOpacity == 1) a = 135;
+            m_darkOverlay->setOpacity(a);
+        }
+        if (m_brandLabel) m_brandLabel->setVisible(!g_hideBranding);
+    }
+
     void refreshButtons() {
         if (m_jumpHackBtn)     m_jumpHackBtn->setNormalImage(makeToggle("Jump Hack: ON","Jump Hack: OFF", g_jumpHack));
         if (m_noclipBtn)       m_noclipBtn->setNormalImage(makeToggle("Noclip: ON","Noclip: OFF", g_noclip));
@@ -154,7 +195,7 @@ public:
         if (m_slowMoBtn)       m_slowMoBtn->setNormalImage(makeToggle("Slow Motion: ON","Slow Motion: OFF", g_slowMo));
         if (m_fastMoBtn)       m_fastMoBtn->setNormalImage(makeToggle("Fast Motion: ON","Fast Motion: OFF", g_fastMo));
         if (m_noDeathEffectBtn)m_noDeathEffectBtn->setNormalImage(makeToggle("No Death FX: ON","No Death FX: OFF", g_noDeathEffect));
-        if (m_showHitboxBtn)   m_showHitboxBtn->setNormalImage(makeToggle("Hitboxes: ON","Hitboxes: OFF", g_ldm)); // заглушка
+        if (m_showHitboxBtn)   m_showHitboxBtn->setNormalImage(makeToggle("Hitboxes: ON","Hitboxes: OFF", g_ldm));
         if (m_noWaveBtn)       m_noWaveBtn->setNormalImage(makeToggle("No Wave Trail: ON","No Wave Trail: OFF", g_noWaveTrail));
         if (m_instantCompleteBtn)m_instantCompleteBtn->setNormalImage(makeToggle("Instant Complete: ON","Instant Complete: OFF", g_instantComplete));
         if (m_noSpikesBtn)     m_noSpikesBtn->setNormalImage(makeToggle("No Spikes: ON","No Spikes: OFF", g_noSpikes));
@@ -169,10 +210,24 @@ public:
         if (m_copyHackBtn)     m_copyHackBtn->setNormalImage(makeToggle("Copy Hack: ON","Copy Hack: OFF", false));
         if (m_spinValueBtn) m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed));
         if (m_shValueBtn)   m_shValueBtn->setNormalImage(makeNumber(g_speed));
+        if (m_glowCubeBtn)  m_glowCubeBtn->setNormalImage(makeToggle("Glow Cube: ON","Glow Cube: OFF", g_glowCube));
+        if (m_colorBtn) {
+            const char* cn[6] = {"Dark","Blue","Red","Green","Purple","Gold"};
+            m_colorBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Color: %s", cn[g_menuTheme])->getCString()));
+        }
+        if (m_opacityBtn) {
+            const char* on[3] = {"50%","75%","100%"};
+            m_opacityBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Opacity: %s", on[g_menuOpacity])->getCString()));
+        }
+        if (m_brandingBtn) m_brandingBtn->setNormalImage(ButtonSprite::create(g_hideBranding ? "Branding: Hide" : "Branding: Show"));
+        if (m_cubeScaleBtn) {
+            const char* cs[3] = {"Small","Normal","Big"};
+            m_cubeScaleBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Cube Size: %s", cs[g_cubeScale])->getCString()));
+        }
     }
 
     void setPage(int p) {
-        if (p < 0) p = 0; if (p > 6) p = 6;
+        if (p < 0) p = 0; if (p > 7) p = 7;
         if (p != m_curPage && m_mainPanel) {
             m_mainPanel->stopAllActions();
             m_mainPanel->runAction(CCSequence::create(
@@ -187,6 +242,7 @@ public:
         for (auto n : m_createNodes)  if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)   if (n) n->setVisible(p == 5);
         for (auto n : m_qolNodes)     if (n) n->setVisible(p == 6);
+        for (auto n : m_worldNodes)   if (n) n->setVisible(p == 7);
 
         ccColor3B aBg = {50, 90, 200}, iBg = {28,28,35};
         ccColor3B aLbl = {255,255,255}, iLbl = {170,170,180};
@@ -223,7 +279,8 @@ public:
         auto cb = CCMenuItemSpriteExtra::create(cs, this, menu_selector(NeverloseMenu::onClose));
         cb->setPosition({cx + 360.f, cy + 235.f}); mn->addChild(cb);
 
-        float ty[7] = {cy + 145.f, cy + 112.f, cy + 79.f, cy + 46.f, cy + 13.f, cy - 20.f, cy - 53.f};
+        float ty[8] = {cy + 150.f, cy + 117.f, cy + 84.f, cy + 51.f, cy + 18.f,
+                        cy - 15.f, cy - 48.f, cy - 81.f};
         auto mkTab = [&](const char* t, cocos2d::SEL_MenuHandler cb_, float y) {
             auto bg = CCScale9Sprite::create("GJ_square01.png");
             bg->setContentSize({200.f, 32.f}); bg->setColor({28,28,35});
@@ -242,6 +299,7 @@ public:
         m_tabCreate  = mkTab("Create",   menu_selector(NeverloseMenu::onTabCreate),  ty[4]);
         m_tabLegit   = mkTab("Legit",    menu_selector(NeverloseMenu::onTabLegit),   ty[5]);
         m_tabQOL     = mkTab("QOL",      menu_selector(NeverloseMenu::onTabQOL),     ty[6]);
+        m_tabWorld   = mkTab("NL.World", menu_selector(NeverloseMenu::onTabWorld),   ty[7]);
 
         auto addBtn = [&](CCMenuItemSpriteExtra*& btn, const char* txt, cocos2d::SEL_MenuHandler cb, CCPoint pos, float sc, std::vector<CCNode*>& vec) {
             btn = CCMenuItemSpriteExtra::create(ButtonSprite::create(txt), this, cb);
@@ -300,7 +358,7 @@ public:
         addBtn(m_cpsBtn,        "CPS: OFF",         menu_selector(NeverloseMenu::onCPS),      {cx + 60.f, cy + 95.f},  0.55f, m_legitNodes);
         addBtn(m_timeBtn,       "Time: OFF",        menu_selector(NeverloseMenu::onTime),     {cx + 60.f, cy + 30.f},  0.55f, m_legitNodes);
         addBtn(m_fpsBtn,        "FPS: OFF",         menu_selector(NeverloseMenu::onFPS),      {cx + 60.f, cy - 35.f},  0.55f, m_legitNodes);
-                addBtn(m_autoRetryBtn,  "Auto Retry: OFF",  menu_selector(NeverloseMenu::onAutoRetry),{cx + 60.f, cy - 100.f}, 0.55f, m_legitNodes);
+        addBtn(m_autoRetryBtn,  "Auto Retry: OFF",  menu_selector(NeverloseMenu::onAutoRetry),{cx + 60.f, cy - 100.f}, 0.55f, m_legitNodes);
 
         addBtn(m_showPercentBtn,"Show %: OFF",       menu_selector(NeverloseMenu::onShowPct), {cx + 60.f, cy + 160.f}, 0.55f, m_qolNodes);
         addBtn(m_hidePlayerBtn, "Hide Player: OFF",  menu_selector(NeverloseMenu::onHidePl),  {cx + 60.f, cy + 95.f},  0.55f, m_qolNodes);
@@ -308,8 +366,15 @@ public:
         addBtn(m_fastMoBtn,     "Fast Motion: OFF",  menu_selector(NeverloseMenu::onFastMo),  {cx + 60.f, cy - 35.f},  0.55f, m_qolNodes);
         addBtn(m_noDeathEffectBtn,"No Death FX: OFF",menu_selector(NeverloseMenu::onNoDeath), {cx + 60.f, cy - 100.f}, 0.55f, m_qolNodes);
 
+        addBtn(m_colorBtn,     "Color: Dark",        menu_selector(NeverloseMenu::onTheme),    {cx + 60.f, cy + 160.f}, 0.55f, m_worldNodes);
+        addBtn(m_opacityBtn,   "Opacity: 100%",      menu_selector(NeverloseMenu::onOpacity),  {cx + 60.f, cy + 95.f},  0.55f, m_worldNodes);
+        addBtn(m_brandingBtn,  "Branding: Show",     menu_selector(NeverloseMenu::onBranding), {cx + 60.f, cy + 30.f},  0.55f, m_worldNodes);
+        addBtn(m_glowCubeBtn,  "Glow Cube: OFF",     menu_selector(NeverloseMenu::onGlowCube), {cx + 60.f, cy - 35.f},  0.55f, m_worldNodes);
+                addBtn(m_cubeScaleBtn, "Cube Size: Normal",  menu_selector(NeverloseMenu::onCubeSize), {cx + 60.f, cy - 100.f}, 0.55f, m_worldNodes);
+
         setPage(0);
         refreshButtons();
+        applyColorTheme();
 
         this->setScale(0.3f);
         this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.35f, 1.0f)));
@@ -336,6 +401,7 @@ public:
     void onTabCreate(CCObject*)  { setPage(4); }
     void onTabLegit(CCObject*)   { setPage(5); }
     void onTabQOL(CCObject*)     { setPage(6); }
+    void onTabWorld(CCObject*)   { setPage(7); }
 
     void onJumpHack(CCObject*)  { g_jumpHack = !g_jumpHack; refreshButtons(); }
     void onNoclip(CCObject*)    { g_noclip = !g_noclip; refreshButtons(); }
@@ -369,6 +435,11 @@ public:
     void onSlowMo(CCObject*)    { g_slowMo = !g_slowMo; if (g_slowMo) g_fastMo=false; refreshButtons(); }
     void onFastMo(CCObject*)    { g_fastMo = !g_fastMo; if (g_fastMo) g_slowMo=false; refreshButtons(); }
     void onNoDeath(CCObject*)   { g_noDeathEffect = !g_noDeathEffect; refreshButtons(); }
+    void onTheme(CCObject*)     { g_menuTheme = (g_menuTheme + 1) % 6; applyColorTheme(); refreshButtons(); }
+    void onOpacity(CCObject*)   { g_menuOpacity = (g_menuOpacity + 1) % 3; applyColorTheme(); refreshButtons(); }
+    void onBranding(CCObject*)  { g_hideBranding = !g_hideBranding; applyColorTheme(); refreshButtons(); }
+    void onGlowCube(CCObject*)  { g_glowCube = !g_glowCube; refreshButtons(); }
+    void onCubeSize(CCObject*)  { g_cubeScale = (g_cubeScale + 1) % 3; refreshButtons(); }
 
     void onSpinUp(CCObject*)   { g_spinSpeed+=1.f; if(g_spinSpeed>500.f)g_spinSpeed=500.f; if(m_spinValueBtn)m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed)); }
     void onSpinDown(CCObject*) { g_spinSpeed-=1.f; if(g_spinSpeed<1.f)g_spinSpeed=1.f; if(m_spinValueBtn)m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed)); }
@@ -417,6 +488,16 @@ class $modify(NLPlayLayer, PlayLayer) {
         if (player) {
             if (g_jumpHack) player->pushButton(PlayerButton::Jump);
             player->setVisible(!g_hidePlayer);
+
+            if (g_instantComplete) {
+                float endX = 10000.f;
+                if (this->m_level) {
+                    endX = this->m_level->m_levelLength * 30.f;
+                    if (endX < 5000.f) endX = 5000.f;
+                }
+                player->setPositionX(endX);
+                g_instantComplete = false;
+            }
         }
 
         if (CCDirector::get() && CCDirector::get()->getScheduler()) {
@@ -496,6 +577,16 @@ class $modify(NLPlayerObject, PlayerObject) {
         }
         if (g_noWaveTrail && this->m_waveTrail) this->m_waveTrail->setVisible(false);
         if (g_reverseGravity) this->flipGravity(false, true);
+
+        if (g_glowCube) {
+            this->setOpacity(200);
+            this->setColor({255, 200, 255});
+        } else {
+            this->setOpacity(255);
+        }
+        if (g_cubeScale == 0) this->setScale(0.7f);
+        else if (g_cubeScale == 2) this->setScale(1.4f);
+        else this->setScale(1.0f);
 
         if (g_shake) {
             g_shakeTimer += dt;
