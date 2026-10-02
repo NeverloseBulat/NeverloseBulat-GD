@@ -28,6 +28,8 @@ static bool  g_blurEffect   = false;
 static bool  g_rainbowMode  = false;
 static float g_rainbowTimer = 0.f;
 static float g_cubeScaleVal = 1.0f;
+static int   g_btnColorIdx  = 0;
+static bool  g_showCharacter = false;
 
 static float g_speed=1.0f, g_spinSpeed=5.0f, g_shakeTimer=0.0f,
              g_spinPhase=0.0f, g_nlGravPhase=0.0f;
@@ -187,6 +189,7 @@ protected:
         *m_brandingBtn=nullptr,*m_blurBtn=nullptr,
         *m_colorAllBtn=nullptr,*m_rainbowBtn=nullptr,
         *m_glowCubeBtn=nullptr,*m_cubeScaleBtn=nullptr,
+        *m_btnColorBtn=nullptr,*m_characterBtn=nullptr,
         *m_tabMain=nullptr,*m_tabRage=nullptr,*m_tabVisuals=nullptr,
         *m_tabAntiAim=nullptr,*m_tabCreate=nullptr,*m_tabLegit=nullptr,
         *m_tabQOL=nullptr,*m_tabWorld=nullptr;
@@ -277,6 +280,7 @@ public:
         const char* cn[6] = {"Dark","Blue","Red","Green","Purple","Gold"};
         const char* on[3] = {"50%","75%","100%"};
         const char* sc[3] = {"Small","Normal","Big"};
+        const char* bc[6] = {"Default","Blue","Red","Green","Purple","Gold"};
         if (m_colorBtn)     m_colorBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Color: %s", cn[g_menuTheme])->getCString()));
         if (m_opacityBtn)   m_opacityBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Opacity: %s", on[g_menuOpacity])->getCString()));
         if (m_scaleBtn)     m_scaleBtn->setNormalImage(ButtonSprite::create(CCString::createWithFormat("Scale: %s", sc[g_menuScale])->getCString()));
@@ -287,6 +291,48 @@ public:
         if (m_glowCubeBtn)  m_glowCubeBtn->setNormalImage(makeToggle("Glow Cube: ON","Glow Cube: OFF", g_glowCube));
         if (m_cubeScaleBtn) m_cubeScaleBtn->setNormalImage(ButtonSprite::create(
             CCString::createWithFormat("Cube Size: %.2f", g_cubeScaleVal)->getCString()));
+        if (m_btnColorBtn)  m_btnColorBtn->setNormalImage(ButtonSprite::create(
+            CCString::createWithFormat("Btn Color: %s", bc[g_btnColorIdx])->getCString()));
+        if (m_characterBtn) m_characterBtn->setNormalImage(
+            makeToggle("Character: ON","Character: OFF", g_showCharacter));
+    }
+
+    void applyBtnColor() {
+        ccColor3B c = {255, 255, 255};
+        switch (g_btnColorIdx) {
+            case 1: c = {130, 180, 255}; break;
+            case 2: c = {255, 130, 130}; break;
+            case 3: c = {130, 255, 150}; break;
+            case 4: c = {200, 140, 255}; break;
+            case 5: c = {255, 220, 120}; break;
+        }
+        if (auto menu = this->getChildByType<CCMenu>(0)) {
+            for (int i = 0; i < menu->getChildrenCount(); i++) {
+                if (auto item = typeinfo_cast<CCMenuItemSpriteExtra*>(menu->getChildren()->objectAtIndex(i))) {
+                    for (int j = 0; j < item->getChildrenCount(); j++) {
+                        if (auto s = typeinfo_cast<CCSprite*>(item->getChildren()->objectAtIndex(j)))
+                            s->setColor(c);
+                    }
+                }
+            }
+        }
+    }
+
+    void toggleCharacter() {
+        if (auto old = this->getChildByID("nl-character")) old->removeFromParent();
+        if (!g_showCharacter) return;
+        auto ws = CCDirector::get()->getWinSize();
+        auto player = CCSprite::createWithSpriteFrameName("player_01_001.png");
+        if (!player) return;
+        player->setID("nl-character");
+        player->setPosition({ws.width/2.f + 260.f, ws.height/2.f - 30.f});
+        player->setScale(1.8f);
+        this->addChild(player, 50);
+        player->runAction(CCRepeatForever::create(CCSequence::create(
+            CCEaseSineInOut::create(CCMoveBy::create(1.0f, {0, 15.f})),
+            CCEaseSineInOut::create(CCMoveBy::create(1.0f, {0, -15.f})),
+            nullptr)));
+        player->runAction(CCRepeatForever::create(CCRotateBy::create(3.0f, 360.f)));
     }
 
     void setPage(int p) {
@@ -304,7 +350,7 @@ public:
         for (auto n : m_antiAimNodes) if (n) n->setVisible(p == 3);
         for (auto n : m_createNodes)  if (n) n->setVisible(p == 4);
         for (auto n : m_legitNodes)   if (n) n->setVisible(p == 5);
-        for (auto n : m_qolNodes)     if (n) n->setVisible(p == 6);
+                for (auto n : m_qolNodes)     if (n) n->setVisible(p == 6);
         for (auto n : m_worldNodes)   if (n) n->setVisible(p == 7);
 
         ccColor3B aBg = {50, 90, 200}, iBg = {28,28,35};
@@ -438,6 +484,8 @@ public:
         addBtn(m_rainbowBtn,   "Rainbow: OFF",      menu_selector(NeverloseMenu::onRainbow),  {cx + 60.f, cy - 165.f}, 0.55f, m_worldNodes);
         addBtn(m_glowCubeBtn,  "Glow Cube: OFF",    menu_selector(NeverloseMenu::onGlowCube), {cx + 60.f, cy - 230.f}, 0.55f, m_worldNodes);
         addBtn(m_cubeScaleBtn, "Cube Size: 1.00",   menu_selector(NeverloseMenu::onCubeSize), {cx + 60.f, cy + 290.f}, 0.55f, m_worldNodes);
+        addBtn(m_btnColorBtn,  "Btn Color: Default",menu_selector(NeverloseMenu::onBtnColor), {cx + 60.f, cy + 355.f}, 0.55f, m_worldNodes);
+        addBtn(m_characterBtn, "Character: OFF",    menu_selector(NeverloseMenu::onCharacter),{cx + 60.f, cy + 420.f}, 0.55f, m_worldNodes);
 
         setPage(0);
         refreshButtons();
@@ -510,6 +558,8 @@ public:
     void onRainbow(CCObject*)  { g_rainbowMode = !g_rainbowMode; refreshButtons(); }
     void onGlowCube(CCObject*) { g_glowCube = !g_glowCube; refreshButtons(); }
     void onCubeSize(CCObject*) { if (auto p = CubeSizePopup::create()) this->addChild(p, 9); }
+    void onBtnColor(CCObject*) { g_btnColorIdx = (g_btnColorIdx + 1) % 6; applyBtnColor(); refreshButtons(); }
+    void onCharacter(CCObject*) { g_showCharacter = !g_showCharacter; toggleCharacter(); refreshButtons(); }
 
     void onSpinUp(CCObject*)   { g_spinSpeed+=1.f; if(g_spinSpeed>500.f)g_spinSpeed=500.f; if(m_spinValueBtn)m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed)); }
     void onSpinDown(CCObject*) { g_spinSpeed-=1.f; if(g_spinSpeed<1.f)g_spinSpeed=1.f; if(m_spinValueBtn)m_spinValueBtn->setNormalImage(makeNumber(g_spinSpeed)); }
@@ -570,69 +620,3 @@ class $modify(NLPlayLayer, PlayLayer) {
 
         if (s_cpsLabel)   s_cpsLabel->setVisible(g_showCPS);
         if (s_timeLabel)  s_timeLabel->setVisible(g_showTime);
-        if (s_fpsLabel)   s_fpsLabel->setVisible(g_showFPS);
-        if (s_cheatLabel) s_cheatLabel->setVisible(g_cheatIndicator);
-        if (s_percentLabel) s_percentLabel->setVisible(g_showPercent);
-
-        auto player = m_player1;
-        if (player) {
-            if (g_jumpHack) player->pushButton(PlayerButton::Jump);
-            player->setVisible(!g_hidePlayer);
-
-            if (g_instantComplete) {
-                float endX = 10000.f;
-                if (this->m_level) {
-                    endX = this->m_level->m_levelLength * 30.f;
-                    if (endX < 5000.f) endX = 5000.f;
-                }
-                player->setPositionX(endX);
-                g_instantComplete = false;
-            }
-        }
-
-        if (CCDirector::get() && CCDirector::get()->getScheduler()) {
-            if (g_slowMo)          CCDirector::get()->getScheduler()->setTimeScale(0.5f);
-            else if (g_fastMo)     CCDirector::get()->getScheduler()->setTimeScale(2.0f);
-            else if (!g_speedhack) CCDirector::get()->getScheduler()->setTimeScale(1.0f);
-        }
-
-        if (s_percentLabel && player) {
-            float pct = player->getPositionX() / 10.f;
-            if (pct > 100.f) pct = 100.f;
-            if (pct < 0.f)   pct = 0.f;
-            s_percentLabel->setString(CCString::createWithFormat("%.0f%%", pct)->getCString());
-        }
-
-        s_timeAlive += dt; s_frameCount++; s_fpsTimer += dt;
-        if (s_fpsTimer >= 0.5f) {
-            float fps = s_frameCount / s_fpsTimer;
-            if (s_fpsLabel) s_fpsLabel->setString(CCString::createWithFormat("FPS: %.0f", fps)->getCString());
-            s_frameCount = 0; s_fpsTimer = 0.f;
-        }
-        if (s_timeLabel) s_timeLabel->setString(CCString::createWithFormat("Time: %.2f", s_timeAlive)->getCString());
-        if (s_cpsLabel) {
-            s_cpsTimer += dt;
-            if (s_cpsTimer >= 1.f) {
-                s_cpsLabel->setString(CCString::createWithFormat("CPS: %d", g_clickCount)->getCString());
-                g_clickCount = 0; s_cpsTimer = 0.f;
-            }
-        }
-    }
-
-    void destroyPlayer(PlayerObject* player, GameObject* obj) override {
-        if (g_noclip || g_godMode || g_noSpikes) return;
-        PlayLayer::destroyPlayer(player, obj);
-    }
-
-    void onQuit() {
-        if (CCDirector::get() && CCDirector::get()->getScheduler())
-            CCDirector::get()->getScheduler()->setTimeScale(1.f);
-        s_cpsLabel=s_timeLabel=s_fpsLabel=s_cheatLabel=s_percentLabel=nullptr;
-        s_timeAlive=0.f; s_frameCount=0; s_fpsTimer=0.f; s_cpsTimer=0.f;
-        PlayLayer::onQuit();
-    }
-};
-
-class $modify(NLPauseLayer, PauseLayer) {
-    void customSetup() {
-        PauseLayer::customSetup
